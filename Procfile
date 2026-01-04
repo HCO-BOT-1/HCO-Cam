@@ -1,2 +1,1 @@
-web: gunicorn app:flask_app --bind 0.0.0.0:$PORT --worker-class aiohttp.GunicornWebWorker
-worker: python bot.py
+web: gunicorn server:app --bind 0.0.0.0:$PORT --timeout 120

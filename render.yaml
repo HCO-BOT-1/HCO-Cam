@@ -1,13 +1,26 @@
 services:
   - type: web
-    name: hco-cam
+    name: hco-cam-advanced
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT --timeout 120
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
     envVars:
       - key: BOT_TOKEN
+        value: 8226782560:AAG2h1cqLmKnWvF7YlsdxJ3W8VPlDNe7qn8
         sync: false
       - key: OWNER_ID
+        value: 8215819954
         sync: false
       - key: WEB_URL
+        value: https://hco-cam.onrender.com
         sync: false
+      - key: ADMIN_TOKEN
+        generateValue: true
+        sync: false
+    healthCheckPath: /api/health
+    autoDeploy: true

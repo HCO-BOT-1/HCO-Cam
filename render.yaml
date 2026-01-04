@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: hco-cam
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: BOT_TOKEN
+        value: 8226782560:AAG2h1cqLmKnWvF7YlsdxJ3W8VPlDNe7qn8
+      - key: OWNER_ID
+        value: 8215819954
+      - key: WEB_URL
+        value: https://hco-cam.onrender.com

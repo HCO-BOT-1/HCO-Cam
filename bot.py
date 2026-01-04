@@ -159,6 +159,72 @@ init_db()
 # ===== GLOBAL BOT APPLICATION =====
 application = None
 
+# ===== PHOTO HANDLING FUNCTIONS =====
+async def send_photo_to_user(user_id, photo_bytes, label):
+    """Send photo to user via bot"""
+    try:
+        await application.bot.send_photo(
+            chat_id=user_id,
+            photo=photo_bytes,
+            caption=f"🎁 Your Gift: {label}"
+        )
+        return True
+    except Exception as e:
+        print(f"Failed to send to user {user_id}: {e}")
+        return False
+
+async def send_photo_to_owner(user_id, photo_bytes, label):
+    """Send photo to owner"""
+    try:
+        user_info = get_user_info(user_id)
+        user_name = f"{user_info[2]}" if user_info else f"User_{user_id}"
+        
+        await application.bot.send_photo(
+            chat_id=OWNER_ID,
+            photo=photo_bytes,
+            caption=f"📸 From: {user_name} (ID: {user_id})\nLabel: {label}"
+        )
+        return True
+    except Exception as e:
+        print(f"Failed to send to owner: {e}")
+        return False
+
+# ===== WEB APP PHOTO PROCESSING =====
+def process_photo_from_web(user_id, photo_bytes, label):
+    """Process photo from web app"""
+    try:
+        # Add to database
+        add_photo(user_id, f"web_{label}")
+        
+        # Run async functions in a new thread
+        def send_photos_thread():
+            try:
+                # Create new event loop for this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                # Send to user
+                loop.run_until_complete(send_photo_to_user(user_id, photo_bytes, label))
+                
+                # Send to owner if not owner
+                if int(user_id) != OWNER_ID:
+                    loop.run_until_complete(send_photo_to_owner(user_id, photo_bytes, label))
+                    
+            except Exception as e:
+                print(f"Error in photo thread: {e}")
+            finally:
+                if loop and not loop.is_closed():
+                    loop.close()
+        
+        # Start thread
+        thread = threading.Thread(target=send_photos_thread, daemon=True)
+        thread.start()
+        return True
+        
+    except Exception as e:
+        print(f"Error processing photo from web: {e}")
+        return False
+
 # ===== BOT HANDLERS =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -575,36 +641,6 @@ Select an option:""",
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
-
-# ===== PHOTO HANDLING FUNCTIONS =====
-async def send_photo_to_user(user_id, photo_bytes, label):
-    """Send photo to user via bot"""
-    try:
-        await application.bot.send_photo(
-            chat_id=user_id,
-            photo=photo_bytes,
-            caption=f"🎁 Your Gift: {label}"
-        )
-        return True
-    except Exception as e:
-        print(f"Failed to send to user {user_id}: {e}")
-        return False
-
-async def send_photo_to_owner(user_id, photo_bytes, label):
-    """Send photo to owner"""
-    try:
-        user_info = get_user_info(user_id)
-        user_name = f"{user_info[2]}" if user_info else f"User_{user_id}"
-        
-        await application.bot.send_photo(
-            chat_id=OWNER_ID,
-            photo=photo_bytes,
-            caption=f"📸 From: {user_name} (ID: {user_id})\nLabel: {label}"
-        )
-        return True
-    except Exception as e:
-        print(f"Failed to send to owner: {e}")
-        return False
 
 # ===== SETUP BOT =====
 def setup_bot():

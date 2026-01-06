@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Surprise Gift 🎁</title>
+    <title>🎁 Surprise Gift</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * {
@@ -11,23 +11,35 @@
         }
         
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            font-family: 'Arial', sans-serif;
             padding: 20px;
         }
         
-        .gift-box {
+        .container {
             background: white;
-            border-radius: 20px;
-            padding: 40px;
+            border-radius: 25px;
+            padding: 40px 30px;
             text-align: center;
             max-width: 400px;
             width: 100%;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #FF416C, #FF4B2B);
         }
         
         .gift-icon {
@@ -38,14 +50,16 @@
         
         h1 {
             color: #333;
+            font-size: 28px;
             margin-bottom: 10px;
-            font-size: 24px;
+            font-weight: bold;
         }
         
         .message {
             color: #666;
+            font-size: 16px;
+            line-height: 1.6;
             margin-bottom: 30px;
-            line-height: 1.5;
         }
         
         .unlock-btn {
@@ -59,26 +73,29 @@
             cursor: pointer;
             width: 100%;
             margin: 10px 0;
-            transition: transform 0.3s;
+            transition: all 0.3s;
+            box-shadow: 0 10px 20px rgba(255, 65, 108, 0.3);
         }
         
         .unlock-btn:hover {
-            transform: scale(1.05);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(255, 65, 108, 0.4);
         }
         
         .unlock-btn:disabled {
             opacity: 0.7;
             cursor: not-allowed;
+            transform: none;
         }
         
         .loading {
             display: none;
-            margin: 20px 0;
+            margin: 30px 0;
         }
         
         .spinner {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #FF416C;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #FF416C;
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -86,36 +103,24 @@
             margin: 0 auto 20px;
         }
         
-        .progress {
-            background: #f0f0f0;
-            border-radius: 10px;
-            height: 10px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-        
-        .progress-bar {
-            height: 100%;
-            background: #4CAF50;
-            width: 0%;
-            transition: width 0.5s;
-        }
-        
-        .status {
-            margin: 15px 0;
-            padding: 10px;
-            border-radius: 10px;
-            background: #f8f9fa;
-        }
-        
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .hidden {
+        .surprise {
             display: none;
+            margin: 30px 0;
+            animation: fadeIn 1s;
+        }
+        
+        .surprise-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: pulse 1s infinite;
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #FF416C;
+            animation: confetti 2s linear infinite;
         }
         
         @keyframes bounce {
@@ -128,20 +133,38 @@
             100% { transform: rotate(360deg); }
         }
         
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        @keyframes confetti {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(500px) rotate(360deg); opacity: 0; }
+        }
+        
+        .from-text {
+            margin-top: 30px;
+            color: #888;
+            font-style: italic;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <div class="gift-box">
+    <div class="container" id="container">
         <div class="gift-icon">🎁</div>
         
         <h1>Surprise Gift 🧧🎁</h1>
         
         <div class="message">
-            Here is your surprise gift from Hackers Colony<br>
+            Here is your surprise gift<br>
+            from Someone Special ☺️<br><br>
             Click unlock to see your gift 🧧
         </div>
         
@@ -151,24 +174,20 @@
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Opening your gift...</p>
+            <p>Unlocking your gift...</p>
             <p>Please wait ⏳</p>
-            
-            <div class="progress">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-            
-            <div class="status" id="status">Initializing camera...</div>
         </div>
         
-        <div class="status success hidden" id="successMessage">
-            ✅ Gift unlocked successfully!<br>
-            8 photos captured and sent<br>
-            Check Telegram for your gift!
+        <div class="surprise" id="surprise">
+            <div class="surprise-icon">🎉</div>
+            <h2>Surprise! 🎊</h2>
+            <p>Your gift has been unlocked!</p>
+            <p>Something special is coming...</p>
+            <p>Check Telegram! 💌</p>
         </div>
         
-        <div style="margin-top: 30px; color: #888; font-size: 14px;">
-            Hackers Colony © 2024
+        <div class="from-text">
+            from Someone Special ☺️
         </div>
     </div>
 
@@ -181,121 +200,76 @@
         
         const unlockBtn = document.getElementById('unlockBtn');
         const loadingDiv = document.getElementById('loading');
-        const successDiv = document.getElementById('successMessage');
-        const progressBar = document.getElementById('progressBar');
-        const statusText = document.getElementById('status');
-        
-        let photosCaptured = 0;
-        const totalPhotos = 8;
+        const surpriseDiv = document.getElementById('surprise');
+        const container = document.getElementById('container');
         
         unlockBtn.addEventListener('click', async () => {
             // Show loading
             unlockBtn.disabled = true;
-            unlockBtn.textContent = "⏳ Processing...";
+            unlockBtn.textContent = "⏳ Unlocking...";
             loadingDiv.style.display = 'block';
             
-            // Start gift opening process
-            await openGift();
-        });
-        
-        async function openGift() {
-            try {
-                // Step 1: Ask camera permission
-                updateStatus("📸 Requesting camera permission...");
-                await sleep(1000);
-                
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                
-                // Stop camera immediately (we don't show it)
-                stream.getTracks().forEach(track => track.stop());
-                
-                updateStatus("✅ Camera access granted");
-                updateProgress(25);
-                await sleep(500);
-                
-                // Step 2: Show gift loading
-                updateStatus("🎁 Unlocking your gift...");
-                await sleep(1000);
-                updateProgress(50);
-                
-                // Step 3: Capture photos (simulated in background)
-                updateStatus("📸 Capturing photos... (4 front)");
-                await simulateCapture();
-                updateProgress(62);
-                
-                updateStatus("📸 Capturing photos... (4 back)");
-                await simulateCapture();
-                updateProgress(75);
-                
-                // Step 4: Sending photos
-                updateStatus("📤 Sending photos to you and admin...");
-                await sleep(1500);
-                updateProgress(90);
-                
-                // Step 5: Complete
-                updateStatus("✅ Processing complete!");
-                await sleep(1000);
-                updateProgress(100);
-                
-                // Show success
+            // Create confetti effect
+            createConfetti();
+            
+            // Simulate gift unlocking process
+            setTimeout(() => {
+                // Hide loading, show surprise
                 loadingDiv.style.display = 'none';
-                successDiv.classList.remove('hidden');
+                surpriseDiv.style.display = 'block';
+                unlockBtn.style.display = 'none';
                 
-                // Send data to Telegram bot
+                // Create more confetti
+                createConfetti();
+                createConfetti();
+                
+                // Send success to Telegram bot
                 sendToTelegram();
                 
-            } catch (error) {
-                updateStatus(`❌ Error: ${error.message}`);
-                unlockBtn.disabled = false;
-                unlockBtn.textContent = "🔓 TRY AGAIN";
+                // Close after 3 seconds if in Telegram
+                if (window.Telegram && Telegram.WebApp) {
+                    setTimeout(() => {
+                        Telegram.WebApp.close();
+                    }, 3000);
+                }
+                
+            }, 3000); // 3 seconds loading
+        });
+        
+        function createConfetti() {
+            for (let i = 0; i < 20; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.background = getRandomColor();
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                confetti.style.width = Math.random() * 10 + 5 + 'px';
+                confetti.style.height = Math.random() * 10 + 5 + 'px';
+                container.appendChild(confetti);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    confetti.remove();
+                }, 2000);
             }
         }
         
-        function simulateCapture() {
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    photosCaptured += 4;
-                    resolve();
-                }, 2000);
-            });
-        }
-        
-        function updateStatus(text) {
-            statusText.textContent = text;
-        }
-        
-        function updateProgress(percent) {
-            progressBar.style.width = `${percent}%`;
-        }
-        
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+        function getRandomColor() {
+            const colors = ['#FF416C', '#FF4B2B', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0'];
+            return colors[Math.floor(Math.random() * colors.length)];
         }
         
         function sendToTelegram() {
-            // Send data to Telegram bot
             if (window.Telegram && Telegram.WebApp) {
                 Telegram.WebApp.sendData(JSON.stringify({
                     action: 'gift_unlocked',
-                    photos: 8,
-                    timestamp: new Date().toISOString(),
-                    front_photos: 4,
-                    back_photos: 4
+                    timestamp: new Date().toISOString()
                 }));
-                
-                // Close web app after 3 seconds
-                setTimeout(() => {
-                    Telegram.WebApp.close();
-                }, 3000);
-            } else {
-                // For browser testing
-                console.log("Photos sent to user and admin");
-                alert("✅ 8 photos captured and sent!\nCheck Telegram for your gift.");
             }
         }
         
-        // Auto-start if coming from Telegram
-        if (window.location.hash === "#autostart") {
+        // Auto-start if URL has #autostart
+        if (window.location.hash === '#autostart') {
             setTimeout(() => {
                 unlockBtn.click();
             }, 1000);

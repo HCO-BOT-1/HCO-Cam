@@ -1,0 +1,14 @@
+{
+  "name": "hackers-colony-gift",
+  "version": "1.0.0",
+  "description": "Hackers Colony Surprise Gift Camera Bot",
+  "scripts": {
+    "start": "serve ."
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

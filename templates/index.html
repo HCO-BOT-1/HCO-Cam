@@ -1,0 +1,209 @@
+Hackers Colony Official:
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Surprise Capture</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif; padding: 16px; }
+    #video { width: 100%; max-width: 480px; border: 1px solid #ccc; background: #000; }
+    .thumbs { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .thumb { width: 110px; height: 80px; border:1px solid #ccc; display:flex; align-items:center; justify-content:center; position:relative; }
+    .thumb img { max-width:100%; max-height:100%; }
+    .thumb button { position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.6); color:#fff; border:0; padding:2px 6px; cursor:pointer; font-size:12px; }
+    #controls { margin-top:8px; }
+    #status { margin-top:8px; font-weight:600; }
+    #uploadBtn { margin-left:8px; }
+  </style>
+</head>
+<body>
+  <h2>Surprise Capture</h2>
+  <p id="instructions">This page will ask for camera access once. Capture 4 front images, then flip and capture 4 back images.</p>
+
+  <video id="video" autoplay playsinline></video>
+
+  <div id="controls">
+    <button id="captureBtn">Capture</button>
+    <button id="nextBtn" disabled>Done set / Next</button>
+    <button id="uploadBtn" disabled>Upload all (send to bot)</button>
+  </div>
+
+  <div id="status">Side: <span id="sideLabel">Front</span> — Taken <span id="takenCount">0</span>/4</div>
+
+  <h3>Front</h3>
+  <div id="frontThumbs" class="thumbs"></div>
+
+  <h3>Back</h3>
+  <div id="backThumbs" class="thumbs"></div>
+
+  <script>
+    // Upload secret injected by server-side template
+    const UPLOAD_SECRET = "{{ upload_secret }}";
+
+    const video = document.getElementById('video');
+    const captureBtn = document.getElementById('captureBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const sideLabel = document.getElementById('sideLabel');
+    const takenCountLabel = document.getElementById('takenCount');
+
+    const frontThumbs = document.getElementById('frontThumbs');
+    const backThumbs = document.getElementById('backThumbs');
+
+    let stream = null;
+    let currentSide = 'front'; // 'front' or 'back'
+    let frontPhotos = []; // array of Blob
+    let backPhotos = [];
+
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        video.srcObject = stream;
+      } catch (err) {
+        alert("Camera access is required. Error: " + err.message);
+      }
+    }
+
+    function updateUI() {
+      sideLabel.textContent = currentSide.charAt(0).toUpperCase() + currentSide.slice(1);
+      const taken = currentSide === 'front' ? frontPhotos.length : backPhotos.length;
+      takenCountLabel.textContent = taken;
+      nextBtn.disabled = !(currentSide === 'front' ? frontPhotos.length === 4 : backPhotos.length === 4);
+      uploadBtn.disabled = !(frontPhotos.length === 4 && backPhotos.length === 4);
+    }
+
+    function createThumb(blob, side, index) {
+      const url = URL.createObjectURL(blob);
+      const div = document.createElement('div');
+      div.className = 'thumb';
+      const img = document.createElement('img');
+      img.src = url;
+      div.appendChild(img);
+
+      const btn = document.createElement('button');
+      btn.textContent = 'Retake';
+      btn.addEventListener('click', () => {
+        // remove and allow retake
+        if (side === 'front') {
+          frontPhotos.splice(index, 1);
+          renderThumbs();
+        } else {
+          backPhotos.splice(index, 1);
+          renderThumbs();
+        }
+        updateUI();
+      });
+      div.appendChild(btn);
+      return div;
+    }
+
+    function renderThumbs() {
+      frontThumbs.innerHTML = '';
+      backThumbs.innerHTML = '';
+      frontPhotos.forEach((b, i) => frontThumbs.appendChild(createThumb(b, 'front', i)));
+      backPhotos.forEach((b, i) => backThumbs.appendChild(createThumb(b, 'back', i)));
+    }
+
+function captureImage() {
+      if (!stream) return;
+      const videoTrack = stream.getVideoTracks()[0];
+      const settings = videoTrack.getSettings();
+
+      const w = video.videoWidth || 1280;
+      const h = video.videoHeight || 720;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, w, h);
+
+      return new Promise((res) => {
+        canvas.toBlob((blob) => {
+          res(blob);
+        }, 'image/jpeg', 0.9);
+      });
+    }
+
+    captureBtn.addEventListener('click', async () => {
+      const blob = await captureImage();
+      if (currentSide === 'front') {
+        if (frontPhotos.length >= 4) {
+          alert("Already captured 4 front images. Click Next to switch to back.");
+          return;
+        }
+        frontPhotos.push(blob);
+      } else {
+        if (backPhotos.length >= 4) {
+          alert("Already captured 4 back images.");
+          return;
+        }
+        backPhotos.push(blob);
+      }
+      renderThumbs();
+      updateUI();
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentSide === 'front') {
+        if (frontPhotos.length !== 4) {
+          alert("Please capture 4 front images first.");
+          return;
+        }
+        currentSide = 'back';
+      } else {
+        // If on back and pressing next, optional behavior: do nothing or confirm
+        if (backPhotos.length !== 4) {
+          alert("Please capture 4 back images.");
+          return;
+        }
+      }
+      updateUI();
+    });
+
+    uploadBtn.addEventListener('click', async () => {
+      if (frontPhotos.length !== 4 || backPhotos.length !== 4) {
+        alert("Please have 4 front and 4 back photos.");
+        return;
+      }
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = 'Uploading...';
+
+      const fd = new FormData();
+      fd.append('secret', UPLOAD_SECRET);
+
+      // append in order front1..front4 then back1..back4
+      let counter = 0;
+      frontPhotos.forEach((b) => {
+        fd.append('images[]', b, front-${++counter}.jpg);
+      });
+      counter = 0;
+      backPhotos.forEach((b) => {
+        fd.append('images[]', b, back-${++counter}.jpg);
+      });
+
+      try {
+        const res = await fetch('/upload', {
+          method: 'POST',
+          body: fd,
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          alert("Uploaded successfully!");
+        } else {
+          alert("Upload failed: " + (data && data.error ? data.error : JSON.stringify(data)));
+        }
+      } catch (err) {
+        alert("Upload error: " + err.message);
+      } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload all (send to bot)';
+      }
+    });
+
+    // Start camera on load — permission prompt appears once
+    startCamera().then(updateUI);
+  </script>
+</body>
+</html>
